@@ -38,27 +38,38 @@ public class Corpus {
 		return c.equals(BOUNDARY.charAt(0));
 	}
 	
+	public static String getFolder(String filetype) {
+		if (filetype.equals("downcase") || 
+			filetype.equals("preserve_case") ||
+			filetype.equals("naive")) {
+			return "letter";
+		} else {
+			return filetype;
+		}
+	}
+	
 	// input is of the form "br87", "case"
 	public static Corpus autoLoad(String file, String type) {
 		Corpus cl = new Corpus();
 
         String wd = System.getProperty("user.dir");
-        if (wd.equals("/")) {
-            wd = System.getProperty("user.home") + "/Projects/clojure-segmentation";
-        }
 
-		String path = wd + "/" + "input/" + type + "/" + file + ".txt";
+		String path = wd + "/" + "input/" + getFolder(type) + "/" + file + ".txt";
 
 		cl.name = file;
 		
-		if (type.equals("case")) {
+		if (type.equals("preserve_case")) {
 			cl.load(path, false);
 			cl.type = CorpusType.Letter;
 			cl.casePreserved = true;
-		} else if (type.equals("nocase")) {
+		} else if (type.equals("downcase")) {
 			cl.load(path, true);
 			cl.type = CorpusType.Letter;
 			cl.casePreserved = false;
+		} else if (type.equals("naive")) {
+			cl.type = CorpusType.Letter;
+			cl.loadWithSpaces(path);
+			cl.casePreserved = true;
 		} else if (type.equals("syllable")) {
 			cl.loadSyllables(path);
 			cl.type = CorpusType.Syllable;
@@ -229,37 +240,60 @@ public class Corpus {
 		cutPoints = Utils.makeArray(tempCutPoints);
 	}
 
+	public void loadWithSpaces(String file) {
+		try {	
+			cleanChars = new ArrayList<String>();
+			segChars = new ArrayList<String>();
+			
+			FileReader reader = new FileReader(file);
+			for (int c = reader.read(); c != -1; c = reader.read()) {
+				cleanChars.add(Character.toString((char) c));
+				if (isBoundary((char) c)) {
+					segChars.add("*");
+					segChars.add(Character.toString((char) c));
+					segChars.add("*");
+				}
+			}
+			reader.close();
+			
+			cutPoints = new boolean[cleanChars.size()-1];
+		} catch (Exception e) {
+			System.out.println("ERROR - " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
 	// Preserves boundaries as tokens, you can use this for the sentence boundary information
 	// cleanChars = segChars = whatever characters were in the corpus file
 	public void naiveLoad(String file, CorpusType ctype) {
 		
-			try {	
-				BufferedReader in = new BufferedReader(new FileReader(file));
-				String corpus = in.readLine().trim();
-				in.close();
+		try {	
+			BufferedReader in = new BufferedReader(new FileReader(file));
+			String corpus = in.readLine().trim();
+			in.close();
+
+			if (ctype.equals(CorpusType.Letter)) {
+				cleanChars = new ArrayList<String>();
+				segChars = new ArrayList<String>();
 	
-				if (ctype.equals(CorpusType.Letter)) {
-					cleanChars = new ArrayList<String>();
-					segChars = new ArrayList<String>();
-		
-					for (int i = 0; i < corpus.length(); ++i) {
-						Character c = corpus.charAt(i);
-						cleanChars.add(Character.toString(c));
-						segChars.add(Character.toString(c));
-					}    
-					
-				} else if (ctype.equals(CorpusType.Word)) {
-					cleanChars = Arrays.asList(corpus.trim().split("\\s+"));
-					segChars = cleanChars; // is this OK?
-				}
+				for (int i = 0; i < corpus.length(); ++i) {
+					Character c = corpus.charAt(i);
+					cleanChars.add(Character.toString(c));
+					segChars.add(Character.toString(c));
+				}    
 				
-				cutPoints = new boolean[cleanChars.size()-1];
-				
-//				System.out.println(cleanChars.subList(0, 100));
-			} catch (Exception e) {
-				System.out.println("ERROR - " + e.getMessage());
-				e.printStackTrace();
+			} else if (ctype.equals(CorpusType.Word)) {
+				cleanChars = Arrays.asList(corpus.trim().split("\\s+"));
+				segChars = cleanChars; // is this OK?
 			}
+			
+			cutPoints = new boolean[cleanChars.size()-1];
+			
+//				System.out.println(cleanChars.subList(0, 100));
+		} catch (Exception e) {
+			System.out.println("ERROR - " + e.getMessage());
+			e.printStackTrace();
+		}
 		
 	}
 

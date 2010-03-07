@@ -192,6 +192,9 @@ public class Engine {
 
 	    backwardSegmentation = s;
 	    
+	    System.out.println(ve.getVoteString(100));
+	    System.out.println(ve.getSegmentedString(100, threshold));
+	    
 	    return s;
 	}
 	
@@ -274,6 +277,9 @@ public class Engine {
 	    
 	    partialSegmentation = s;
 	    
+	    System.out.println(pve.getVoteString(100));
+	    System.out.println(pve.getSegmentedString(100, threshold));
+	    
 	    return s;
 	}
 	
@@ -294,6 +300,7 @@ public class Engine {
 	    ve.runAlgorithm(useLocalMax);
 
 	    System.out.println(ve.getVoteString(100));
+	    System.out.println(ve.getSegmentedString(100, threshold));
 	    
 	    bidiSegmentation = new Segmentation(windowSize, threshold);
 	    bidiSegmentation.direction = Direction.BiDirectional;
@@ -422,19 +429,21 @@ public class Engine {
 	
 	// Now less wasteful!
 	public static void bidiMDL(Corpus corpus) {
-		System.out.println("Window Size\tThreshold\tLocal Max?\tDescription Length\tPrecision\tRecall\tF-Measure");
-		
 		Vector<Segmentation> segmentations = new Vector<Segmentation>();
-		for (int window = 5; window < 9; window++) {
+		for (int window = 4; window < 8; window++) {
 			Engine engine = new Engine(corpus, window+1);
 			segmentations.addAll(engine.bidiVoteAllThresholds(window, 0, window));
+			System.out.println("Window Size " + window + " Complete.");
 		}	
+
+		System.out.println("Window Size\tThreshold\tLocal Max?\tDescription Length\tPrecision\tRecall\tF-Measure");
 		
 		Collections.sort(segmentations);
 		
 		for (Segmentation s : segmentations) {
 			evalMDL(s, corpus.getCutPoints());
 			CorpusWriter.writeCorpus(corpus, s);
+			System.exit(0);
 		}
 	}
 	
@@ -459,7 +468,7 @@ public class Engine {
 //		Corpus morphs = Corpus.autoLoad("latin", "word");
 		
 		// Start HERE
-		Corpus letters = Corpus.autoLoad("latin-morph", "case");
+		Corpus letters = Corpus.autoLoad("latin-morph", "preserve_case");
 
 //		Corpus caesar = Corpus.autoLoad("caesar", "nocase");
 //		int window = 8; 
@@ -513,8 +522,7 @@ public class Engine {
 		fe.evaluate(finalCorpus.getCutPoints(), gold.getCutPoints());
 		fe.printResults();
 		
-		
-		
+			
 //		int window2 = 4;
 //		Corpus corpus = Corpus.autoLoad("latin-cluster", "case");
 //		Corpus corpus = Corpus.autoLoad("latin-ve-cluster", "case");
@@ -525,7 +533,6 @@ public class Engine {
 //		CorpusWriter.writeCorpus("case/latin-test.txt", veMorphs, segmentation.cutPoints, false);
 //		CorpusWriter.writeCorpus("case/latin-test.txt", trueMorphs, segmentation.cutPoints, false);
 		
-	
 		
 		// GSS EVALUATION
 		
@@ -537,9 +544,6 @@ public class Engine {
 //		ev.printResults();
 		
 		// Sanity check
-		
-		
-
 	}
 	
 	public static void bveTests() {
@@ -563,84 +567,11 @@ public class Engine {
 	public static void main(String[] args) {	
 		Engine.EVALUATE = true;
 		
-//		bveTests();
-		
-//		Corpus corpus = Corpus.autoLoad("voting-experts-truth-UAV_ALL_2401notinorder", "word");
-
-		Corpus master = Corpus.autoLoad("voting-experts-truth-UAV_ALL_2401notinorder", "word");
-		Corpus trainingCorpus = master.getSubCorpus((int) Math.floor(master.getSegmentedChars().size() * 1.0));
-//		Corpus corpus = master.getSubCorpus(master.getSegmentedChars().size());
-		
-//		System.out.println(master.getSegmentedChars().subList(0, 100));
-//		System.out.println(corpus.getSegmentedChars().subList(0, 100));
-		
-		Engine e = new Engine(trainingCorpus, 9);
-//		e.voteForward(6, 4, true); Engine.EVAL_FORWARD = true;
-//		e.voteBackward(6, 4, true); Engine.EVAL_BACKWARD = true;
-//		e.voteBidi(8, 7, true);
-		e.voteBVE(8, 9, 7, true, false);
-//		e.evaluate();
-//		e.evaluateAllLocations();
-		
-//		Corpus testCorpus = Corpus.autoLoad("uav-TeacherActions-2.8.0", "word");
-		Corpus testCorpus = Corpus.autoLoad("bl-epochs", "word");
-		e.voteTransfer(testCorpus, 8, 7, true);
+		Corpus corpus = Corpus.autoLoad("zarathustra", "downcase");
+		Engine e = new Engine(corpus, 8);
+		e.voteBackward(7, 3, false);
 		e.evaluate();
-		CorpusWriter.writeCorpus("nips-epochs.txt", testCorpus, e.partialSegmentation);
 		
-//		Engine.mdl(corpus);
-		
-		
-//		// BL EXPERIMENTS
-		
-//		Corpus corpus = Corpus.autoLoad("voting-experts-truth-UAV_ALL_2401notinorder", "word");
-//		System.out.println(corpus.getCleanChars().subList(0, 100));
-//		Engine.bootstrap(corpus, 8, 12, 8, true);
-//		Engine.mdl(corpus);
-////		bootstrap(corpus, 8, 20, 0);
-
-		// TODO: Finish BL Tests
-//		Corpus corpus = Corpus.autoLoad("bw-2.8.0", "word");
-//		Engine.mdl(corpus);
-//		Engine.bidiBootstrap(corpus, 8, 12, 9, true);
-
-		//		Engine bidi = new Engine(corpus, 9);
-//		bidi.voteBVE(8, 12, 8, true); 
-
-//		Corpus target = Corpus.autoLoad("BL1", "word");
-////		Corpus target = Corpus.autoLoad("voting-experts-truth-ATF", "word");
-//		Segmentation transfer = bidi.voteTransfer(target, 8, 7); // Should the threshold be the same as BVE end threshold?
-//		
-//		System.out.println("TRANSFER");
-//		Evaluator e = new Evaluator();
-//		e.evaluate(transfer, target);
-//		e.printResults();		
-		
+//		Engine.bidiBootstrap(corpus, 7, 14, 3, false);
 	}
 }
-
-
-
-
-
-// TODO: Bring this back
-//public void completeKnowledge(int window, int threshold) {
-//	Corpus completeLoader = new Corpus();
-//	completeLoader.naiveLoad(file);
-//	
-//	forwardKnowledgeCorpus = completeLoader.getCleanChars();
-//	forwardKnowledgeTrie = new Trie();
-//	Trie.addAll(forwardKnowledgeTrie, forwardKnowledgeCorpus, trieDepth);
-//	Trie.generateStatistics(forwardKnowledgeTrie);
-//	
-//	backwardSentenceCorpus = new ArrayList<String>(completeLoader.getCleanChars());
-//	Collections.reverse(backwardSentenceCorpus);
-//	backwardKnowledgeTrie = new Trie();
-//	Trie.addAll(backwardKnowledgeTrie, backwardSentenceCorpus, trieDepth);
-//	Trie.generateStatistics(backwardKnowledgeTrie);
-//	
-//	votePartial(window,threshold);
-//	CorpusWriter.writeCorpus(_forwardCorpus.getName()  + "-complete.txt", _forwardCorpus.getCleanChars(), partialSegmentation.cutPoints, false);
-//	
-//	evaluate();
-//}
