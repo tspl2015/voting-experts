@@ -137,6 +137,21 @@ public class VotingExperts {
 		return result;
 	}
 	
+	public String getSegmentedString(int length, int threshold) {
+		String result = new String();
+		
+		for (int i = 0; i < length; i++) {
+			result += _corpus.get(i);
+			if (i < _vote.length) {
+				if (_vote[i] >= threshold) { 
+					result += "|";	
+				}
+			}
+		}
+		
+		return result;
+	}
+	
 	public List<List<String>> getSegments() {
 		List<List<String>> segments = new ArrayList<List<String>>();
 		List<String> segment = new ArrayList<String>();
