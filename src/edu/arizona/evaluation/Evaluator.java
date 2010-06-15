@@ -7,7 +7,6 @@ package edu.arizona.evaluation;
 
 import edu.arizona.api.Engine.Segmentation;
 import edu.arizona.corpus.Corpus;
-import edu.arizona.util.NF;
 /**
  *
  * @author  Wesley Kerr, Daniel Hewlett
@@ -49,11 +48,11 @@ public class Evaluator {
    }
    
    // Convenience function
-   public void evaluate(Segmentation s, Corpus c) {
-	   evaluate(s.cutPoints, c.getCutPoints());
+   public EvaluationResults evaluate(Segmentation s, Corpus c) {
+	   return evaluate(s.cutPoints, c.getCutPoints());
    }
    
-   public void evaluate(boolean[] ve, boolean[] actual) { 
+   public EvaluationResults evaluate(boolean[] ve, boolean[] actual) { 
 	   if (ve.length != actual.length) {
 		   throw new RuntimeException("CUT POINT LENGTHS DO NOT MATCH: " + ve.length + " should equal " + actual.length);
 	   }
@@ -130,28 +129,19 @@ public class Evaluator {
     	  throw new RuntimeException("YO WE GOT PROBLEMS! " + total + " " + ve.length);
       }
       
-      precision = numTruePositives / ((double) numTruePositives + numFalsePositives);
-      recall    = numTruePositives / ((double) numTruePositives + numFalseNegatives);
-      fMeasure  = 2 * precision * recall / (precision + recall);
-      falsePositiveRate = ((double) numFalsePositives) / numNegatives;
-   }
-   
-   public void printResults() {
-//      System.out.println("Number of Chunks: " + n); 
-	   int veChunks = (numTruePositives + numFalsePositives+1);
-	   
-	   System.out.println("VE Number of Chunks:     " + veChunks);
-	   System.out.println("Actual Number of Chunks: " + (numTruePositives + numFalseNegatives+1));
-//      System.out.println("Number Exact:    " + numExact + " Pct: " + numExact/n);
-//      System.out.println("Number Dangling: " + numDangling + " Pct: " + numDangling/n);
-//      System.out.println("Number Lost:     " + numLost + " Pct: " + numLost/n);
-//      System.out.println("Number of identified Chunks: " + correctChunks/n);
-//      System.out.println("Number of false boundaries: " + numFalseBounds + " Pct: " + numFalseBounds/n);
-//      System.out.println("Number of true boundaries:  " + numTrueBounds + " Pct: " + numTrueBounds/n);
-      System.out.println("Precision:\t" + NF.format(precision));
-      System.out.println("Recall:\t\t"  + NF.format(recall)); 
-      System.out.println("F-measure:\t" + NF.format(fMeasure));
+//      precision = numTruePositives / ((double) numTruePositives + numFalsePositives);
+//      recall    = numTruePositives / ((double) numTruePositives + numFalseNegatives);
+//      fMeasure  = 2 * precision * recall / (precision + recall);
+//      falsePositiveRate = ((double) numFalsePositives) / numNegatives;
       
-//      System.out.println("Chunk Precision:\t" + NF.format(numExact / (double) veChunks));
+      EvaluationResults results = new EvaluationResults();
+      results.boundaryPrecision = numTruePositives / ((double) numTruePositives + numFalsePositives);
+      results.boundaryRecall = numTruePositives / ((double) numTruePositives + numFalseNegatives);
+      results.actualChunkCount = (numTruePositives + numFalseNegatives+1);
+      results.estimatedChunkCount = (numTruePositives + numFalsePositives+1);
+      results.chunkPrecision = correctChunks / ((double) results.estimatedChunkCount);
+      results.chunkRecall = correctChunks / ((double) results.actualChunkCount);
+      
+      return results;
    }
 }

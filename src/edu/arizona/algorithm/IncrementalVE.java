@@ -6,7 +6,6 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Vector;
 
-
 import edu.arizona.corpus.Corpus;
 import edu.arizona.trie.Trie;
 
@@ -58,7 +57,7 @@ public class IncrementalVE {
 		
 		Trie.addAll(trie, split(segmented.replaceAll(" ", "")), trieDepth);
 	
-		Trie.generateStatistics(trie);
+		trie.generateStatistics();
 	}
 	
 	public List<String> split(String s) {
