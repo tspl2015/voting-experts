@@ -9,11 +9,13 @@ public class NF {
 	private static NumberFormat nf;
 	static {
 		nf = NumberFormat.getInstance();
-		nf.setMaximumFractionDigits(5);
-		nf.setMinimumFractionDigits(5);
+		nf.setMaximumFractionDigits(3);
+		nf.setMinimumFractionDigits(3);
 	}
 	
 	public static String format(double number) {
+		if (Double.isNaN(number))
+			return "-----";
 		return nf.format(number);
 	}
 }

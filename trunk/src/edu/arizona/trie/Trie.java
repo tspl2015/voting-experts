@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +22,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.helpers.DefaultHandler;
 
 import edu.arizona.corpus.Corpus;
+import edu.arizona.util.NF;
 import edu.arizona.util.Printer;
 import edu.arizona.util.Utils;
 /**
@@ -30,22 +30,15 @@ import edu.arizona.util.Utils;
  * @author  Wesley Kerr, Daniel Hewlett
  */
 public class Trie {
-
-	protected static int maxDepthSeen;
-	protected static TreeMap<Integer,StatNode> statistics;
-	protected static NumberFormat nf;
 	
-	static { 
-		maxDepthSeen = 0;
-		
-		nf = NumberFormat.getInstance();
-		nf.setGroupingUsed(false);
-		nf.setMaximumFractionDigits(3);
-		nf.setMinimumFractionDigits(3);
-	}
+	// Special members for root node
+	public int maxDepthSeen = 0;
+	private TreeMap<Integer,StatNode> statistics = null; 
 	
+	// All nodes have these members
 	public List<String> prefix;
-
+	public TreeMap<String,Trie> children;
+	
 	public double  freq;
 	public double  stdFreq;
 
@@ -58,9 +51,7 @@ public class Trie {
 
 	public int depth = -1;
 
-	public TreeMap<String,Trie> children;
-
-	/** Creates a new instance of TrieNode */
+	/** Creates a new instance of Trie */
 	public Trie() {
 		children = new TreeMap<String,Trie>();
 	}
@@ -70,123 +61,42 @@ public class Trie {
 	 * Requires touching all of the nodes within the tree.
 	 * Depth level traversal.
 	 */
-	public static void generateStatistics(Trie root) {
+	public void generateStatistics() {
 		statistics = new TreeMap<Integer,StatNode>();
 
 		for (int i = 1; i <= maxDepthSeen; ++i) {
 			statistics.put(new Integer(i), new StatNode());
 		}
 
-		root.fillStatistics(statistics);
+		fillStatistics(statistics);
 
 		for (int i = 1; i <= maxDepthSeen; ++i) {
 			StatNode s = (StatNode) statistics.get(new Integer(i));
 			s.calculate();
 		}
-		root.standardize(statistics);
+		standardize(statistics);
 	}
 
 	/**
 	 * this just displays the stats for for a given depth
-	 * @param id
+	 * @param depth
 	 */
-	public static void printStats(int id) {
-		if (id != -1) {
-			StatNode s = (StatNode) statistics.get(new Integer(id));
-			s.print(id,nf);
+	public void printStats(int depth) {
+		if (depth != -1) {
+			StatNode s = (StatNode) statistics.get(new Integer(depth));
+			s.print(depth);
 			return;
 		}
 
 		for (int i = 1; i <= maxDepthSeen; ++i) {
 			StatNode s = (StatNode) statistics.get(new Integer(i));
-			s.print(i,nf);
+			s.print(i);
 		}
 	}	
 
-	/**
-	 * given a set of tokens and a window size make sure to 
-	 * add all of the sets of tokens with the window size
-	 * @param tokens
-	 * @param windowSize
-	 */
-	public static void addAll(Trie root, List<String> tokens, int windowSize) {
-		root.depth = windowSize;
-		
-		for (int i = 0; i < tokens.size(); ++i) { 
-			List<String> tmp = null;
-			if (i+windowSize > tokens.size()) { 
-				tmp = tokens.subList(i, tokens.size());
-			} else { 
-				tmp = tokens.subList(i, i+windowSize);
-			}
-			
-			root.put(tmp, 1);
-		}		
-	}
-	
-	public static Trie buildTrie(Corpus c, int depth) {
-		return buildTrie(c.getCleanChars(), depth);
-	}
-	
-	public static Trie buildTrie(List<String> tokens, int depth) {
-		Trie root = new Trie();
-		addAll(root,tokens,depth);
-		generateStatistics(root);
-		return root;
-	}
-	
-	public static Trie buildBackwardTrie(Corpus c, int depth) {
-		return buildBackwardTrie(c.getCleanChars(), depth);
-	}
-	
-	public static Trie buildBackwardTrie(List<String> tokens, int depth) {
-		ArrayList<String> backwardCorpus = new ArrayList<String>(tokens);
-		Collections.reverse(backwardCorpus);
-		return buildTrie(backwardCorpus, depth);
-	}
-	
-	public static void extractWords(Trie t) {
-		List<String> begin = Arrays.asList(new String[]{"*"});
-		
-		HashMap<String,Integer> wordCounts = new HashMap<String,Integer>();
-		
-		// The sub-trie rooted at "*" - the "lexicon"
-		TreeMap<String, Trie> lexicon = t.getChildren(begin);
-		
-		for (Trie subTrie : lexicon.values()) {
-			wordCounts.putAll(subTrie.getWords());
-		}
-		
-		class Holder implements Comparable<Holder> {
-			String word;
-			int count;
-			
-			public int compareTo(Holder o) {
-				return -(new Integer(count).compareTo(o.count));
-			}
-		}
-
-		Vector<Holder> v = new Vector<Holder>();
-		for (Map.Entry<String,Integer> e : wordCounts.entrySet()) {
-			Holder h = new Holder(); h.word = e.getKey().substring(1, e.getKey().length()-1); h.count = e.getValue().intValue();
-			v.add(h);
-		}
-		
-		Collections.sort(v);
-		
-		System.out.println("WORDS! at last.");
-		try {
-			PrintStream out = new PrintStream("lexica/seed.lex");
-			
-			for (Holder h : v) {
-				if (h.count > 50) {
-					out.println(h.word + "\t" + h.count);
-				}
-			}
-			
-			out.close();
-		} catch (FileNotFoundException e1) { e1.printStackTrace(); }
-	}
+	public StatNode getStatNode(int depth) {
+		return statistics.get(depth);
+	}	
 	
 	/**
 	 * wrapper function so that we can just call the insert
@@ -403,7 +313,7 @@ public class Trie {
 		return t.getStdEntropy(suffix);
 	}
 
-    	/**
+	/**
 	 * return the standard entropy for the sequence
 	 * @param word
 	 * @return
@@ -491,12 +401,12 @@ public class Trie {
 		System.out.print(tab);
 		for (String t : prefix) 
 			System.out.print(t + " ");
-		System.out.print("Freq: " + nf.format(freq) + " ");
-		System.out.print("StdFreq: " + nf.format(stdFreq) + " ");
-		System.out.print("Entropy: " + nf.format(boundaryEntropy) + " ");
-		System.out.print("StdEntropy: " + nf.format(stdBoundaryEntropy) + " ");
-		System.out.print("IntEntropy: " + nf.format(internalEntropy) + " ");
-		System.out.print("StdIntEntropy: " + nf.format(stdInternalEntropy) + " ");
+		System.out.print("Freq: " + NF.format(freq) + " ");
+		System.out.print("StdFreq: " + NF.format(stdFreq) + " ");
+		System.out.print("Entropy: " + NF.format(boundaryEntropy) + " ");
+		System.out.print("StdEntropy: " + NF.format(stdBoundaryEntropy) + " ");
+		System.out.print("IntEntropy: " + NF.format(internalEntropy) + " ");
+		System.out.print("StdIntEntropy: " + NF.format(stdInternalEntropy) + " ");
 		System.out.println();
 	}
 
@@ -582,6 +492,97 @@ public class Trie {
 		out.write("\" ");
 		out.write("freq=\"" + freq + "\" ");
 		out.write("/>\n");
+	}
+	
+	
+	
+	
+	
+	// STATIC METHODS (old style)
+	
+	/**
+	 * given a set of tokens and a window size make sure to 
+	 * add all of the sets of tokens with the window size
+	 * @param tokens
+	 * @param windowSize
+	 */
+	public static void addAll(Trie root, List<String> tokens, int windowSize) {
+		root.depth = windowSize;
+		
+		for (int i = 0; i < tokens.size(); ++i) { 
+			List<String> tmp = null;
+			if (i+windowSize > tokens.size()) { 
+				tmp = tokens.subList(i, tokens.size());
+			} else { 
+				tmp = tokens.subList(i, i+windowSize);
+			}
+			
+			root.put(tmp, 1);
+		}		
+	}
+	
+	public static Trie buildTrie(Corpus c, int depth) {
+		return buildTrie(c.getCleanChars(), depth);
+	}
+	
+	public static Trie buildTrie(List<String> tokens, int depth) {
+		Trie root = new Trie();
+		addAll(root,tokens,depth);
+		root.generateStatistics();
+		return root;
+	}
+	
+	public static Trie buildBackwardTrie(Corpus c, int depth) {
+		return buildBackwardTrie(c.getCleanChars(), depth);
+	}
+	
+	public static Trie buildBackwardTrie(List<String> tokens, int depth) {
+		ArrayList<String> backwardCorpus = new ArrayList<String>(tokens);
+		Collections.reverse(backwardCorpus);
+		return buildTrie(backwardCorpus, depth);
+	}
+	
+	public static void extractWords(Trie t) {
+		List<String> begin = Arrays.asList(new String[]{"*"});
+		
+		HashMap<String,Integer> wordCounts = new HashMap<String,Integer>();
+		
+		// The sub-trie rooted at "*" - the "lexicon"
+		TreeMap<String, Trie> lexicon = t.getChildren(begin);
+		
+		for (Trie subTrie : lexicon.values()) {
+			wordCounts.putAll(subTrie.getWords());
+		}
+		
+		class Holder implements Comparable<Holder> {
+			String word;
+			int count;
+			
+			public int compareTo(Holder o) {
+				return -(new Integer(count).compareTo(o.count));
+			}
+		}
+
+		Vector<Holder> v = new Vector<Holder>();
+		for (Map.Entry<String,Integer> e : wordCounts.entrySet()) {
+			Holder h = new Holder(); h.word = e.getKey().substring(1, e.getKey().length()-1); h.count = e.getValue().intValue();
+			v.add(h);
+		}
+		
+		Collections.sort(v);
+		
+		System.out.println("WORDS! at last.");
+		try {
+			PrintStream out = new PrintStream("lexica/seed.lex");
+			
+			for (Holder h : v) {
+				if (h.count > 50) {
+					out.println(h.word + "\t" + h.count);
+				}
+			}
+			
+			out.close();
+		} catch (FileNotFoundException e1) { e1.printStackTrace(); }
 	}
 	
 	public static void loadFromFile(final Trie root, BufferedReader in) 

@@ -5,9 +5,9 @@
  */
 package edu.arizona.trie;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 
+import edu.arizona.util.NF;
 import edu.arizona.util.Printer;
 
 /**
@@ -89,19 +89,19 @@ public class StatNode {
       stdDevEnt = Math.sqrt(varEnt);
    }
    
-   public void print(int depth, NumberFormat nf) {
+   public void print(int depth) {
       System.out.print("length: " + Printer.pad(depth+"", 3) + " ");
       System.out.print("number: " + Printer.pad(n+"", 8) + " ");
-      System.out.print("freq [" + Printer.pad(nf.format(meanFreq),11)   + "," + 
-                                  Printer.pad(nf.format(varFreq),18)    + "," + 
-                                  Printer.pad(nf.format(stdDevFreq),11) + "] ");
-      System.out.print("int ent [" + Printer.pad(nf.format(meanIntEnt),5)   + "," + 
-              Printer.pad(nf.format(varIntEnt),5)    + "," + 
-              Printer.pad(nf.format(stdDevIntEnt),5) + "] ");
+      System.out.print("freq [" + Printer.pad(NF.format(meanFreq),11)   + "," + 
+                                  Printer.pad(NF.format(varFreq),18)    + "," + 
+                                  Printer.pad(NF.format(stdDevFreq),11) + "] ");
+      System.out.print("int ent [" + Printer.pad(NF.format(meanIntEnt),5)   + "," + 
+              Printer.pad(NF.format(varIntEnt),5)    + "," + 
+              Printer.pad(NF.format(stdDevIntEnt),5) + "] ");
 
-      System.out.print("ent [" + Printer.pad(nf.format(meanEnt),5)   + "," + 
-                                 Printer.pad(nf.format(varEnt),5)    + "," + 
-                                 Printer.pad(nf.format(stdDevEnt),5) + "] ");
+      System.out.print("ent [" + Printer.pad(NF.format(meanEnt),5)   + "," + 
+                                 Printer.pad(NF.format(varEnt),5)    + "," + 
+                                 Printer.pad(NF.format(stdDevEnt),5) + "] ");
       System.out.println();
    }
 }

@@ -107,8 +107,8 @@ public class PhonemeToMorpheme {
 			
 			System.out.println("THRESHOLD: " + NF.format(threshold));
 			Evaluator e = new Evaluator();
-			e.evaluate(ptm.getCutPoints(), c.getCutPoints());
-			e.printResults();
+			e.evaluate(ptm.getCutPoints(), c.getCutPoints()).printResults();
+			//e.printResults();
 		}
 		
 //		CorpusWriter.writeCorpus(c, ptm._cutPoints);

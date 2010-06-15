@@ -9,6 +9,7 @@ import edu.arizona.algorithm.PhonemeToMorpheme;
 import edu.arizona.algorithm.VotingExperts;
 import edu.arizona.corpus.Corpus;
 import edu.arizona.corpus.CorpusWriter;
+import edu.arizona.evaluation.EvaluationResults;
 import edu.arizona.evaluation.Evaluator;
 import edu.arizona.trie.Trie;
 import edu.arizona.util.NF;
@@ -56,6 +57,8 @@ public class Engine {
 	public static boolean EVAL_BACKWARD = false;
 	public static boolean EVALUATE = false;
 	
+	public static boolean DEBUG = false;
+	
 	int trieDepth;
 
 	// The corpus and the reversed corpus
@@ -101,11 +104,11 @@ public class Engine {
 	public void initTries() {
 		forwardTrie = new Trie();
 		Trie.addAll(forwardTrie, _forwardCorpus.getCleanChars(), trieDepth);
-		Trie.generateStatistics(forwardTrie);
+		forwardTrie.generateStatistics();
 		
 		backwardTrie = new Trie();
 		Trie.addAll(backwardTrie, _backwardCorpus.getCleanChars(), trieDepth);
-		Trie.generateStatistics(backwardTrie);
+		backwardTrie.generateStatistics();
 	}
 		
 	public List<String> getForwardCorpus() {
@@ -130,12 +133,13 @@ public class Engine {
 		forwardKnowledgeCorpus = _forwardCorpus.getCleanChars(); //new ArrayList<String>(bidiInput.getCleanChars());
 		forwardKnowledgeTrie = new Trie();
 		Trie.addAll(forwardKnowledgeTrie, forwardKnowledgeCorpus, trieDepth+1);
-		Trie.generateStatistics(forwardKnowledgeTrie);
+		forwardKnowledgeTrie.generateStatistics();
 
 		partialSegmentation = votePartial(window, startThreshold, useLocalMax, bidiBVE);
 		CorpusWriter.writeCorpus(_forwardCorpus.getName()  + "-partial-1.txt", _forwardCorpus, partialSegmentation);
 		
-		evaluate();
+		if (DEBUG)
+			evaluate();
 		
 		bidiSegmentation = null; // stop the printing of the bidi array, we're done with it
 		
@@ -147,12 +151,13 @@ public class Engine {
 			forwardKnowledgeCorpus = partialInputRest.getCleanChars();
 			forwardKnowledgeTrie = new Trie();
 			Trie.addAll(forwardKnowledgeTrie, forwardKnowledgeCorpus, trieDepth+1);
-			Trie.generateStatistics(forwardKnowledgeTrie);
+			forwardKnowledgeTrie.generateStatistics();
 			
 			partialSegmentation = votePartial(window, threshold, useLocalMax, bidiBVE);
 			CorpusWriter.writeCorpus(_forwardCorpus.getName()  + "-partial-" + (i+1) + ".txt", _forwardCorpus, partialSegmentation);
 			
-			evaluate();
+			if (DEBUG)
+				evaluate();
 			
 			i++;
 		}
@@ -277,8 +282,10 @@ public class Engine {
 	    
 	    partialSegmentation = s;
 	    
-	    System.out.println(pve.getVoteString(100));
-	    System.out.println(pve.getSegmentedString(100, threshold));
+	    if (DEBUG) {
+		    System.out.println(pve.getVoteString(100));
+		    System.out.println(pve.getSegmentedString(100, threshold));
+	    }
 	    
 	    return s;
 	}
@@ -349,8 +356,8 @@ public class Engine {
 	    Arrays.fill(all, true);
 	    
 	    System.out.println("ALL-LOCATIONS:");
-	    e.evaluate(all, _forwardCorpus.getCutPoints());
-	    e.printResults();
+	    EvaluationResults results = e.evaluate(all, _forwardCorpus.getCutPoints());
+	    results.printResults();
 	    System.out.println();
 	}
 	
@@ -363,39 +370,36 @@ public class Engine {
 			Evaluator e = new Evaluator("*");
 			
 		    System.out.println("FORWARD:");
-		    e.evaluate(forwardSegmentation.cutPoints, _forwardCorpus.getCutPoints());
-		    e.printResults();
-		    System.out.println("DL: " + forwardSegmentation.descriptionLength);
-		    System.out.println();
+		    EvaluationResults forwardResults = e.evaluate(forwardSegmentation.cutPoints, _forwardCorpus.getCutPoints());
+		    forwardResults.printResults();
+//		    System.out.println("DL: " + forwardSegmentation.descriptionLength);
+//		    System.out.println();
 		}
 	    
 		if (EVAL_BACKWARD) {
 		    Evaluator backwardEval = new Evaluator("*");
 		    
 		    System.out.println("BACKWARD:");
-		    backwardEval.evaluate(backwardSegmentation.cutPoints, _forwardCorpus.getCutPoints());
-		    backwardEval.printResults();
-		    System.out.println("DL: " + backwardSegmentation.descriptionLength);
-		    System.out.println();
+		    backwardEval.evaluate(backwardSegmentation.cutPoints, _forwardCorpus.getCutPoints()).printResults();
+//		    System.out.println("DL: " + backwardSegmentation.descriptionLength);
+//		    System.out.println();
 		}
 	    
 	    if (bidiSegmentation != null) {
 	    	System.out.println("BIDI:");
 		    Evaluator eb = new Evaluator("*");
 		    
-		    eb.evaluate(bidiSegmentation.cutPoints, _forwardCorpus.getCutPoints());
-		    eb.printResults();
-		    System.out.println("DL: " + bidiSegmentation.descriptionLength);
-		    System.out.println();
+		    eb.evaluate(bidiSegmentation.cutPoints, _forwardCorpus.getCutPoints()).printResults();
+//		    System.out.println("DL: " + bidiSegmentation.descriptionLength);
+//		    System.out.println();
 	    }
 	    
 	    if (partialSegmentation != null) {
 	    	System.out.println("BOOTSTRAP (" + partialSegmentation.windowSize + "," + partialSegmentation.threshold + "):");
 		    Evaluator p = new Evaluator("*");
-		    p.evaluate(partialSegmentation.cutPoints, _forwardCorpus.getCutPoints());
-		    p.printResults();
-		    System.out.println("DL: " + partialSegmentation.descriptionLength);
-		    System.out.println();
+		    p.evaluate(partialSegmentation.cutPoints, _forwardCorpus.getCutPoints()).printResults();
+//		    System.out.println("DL: " + partialSegmentation.descriptionLength);
+//		    System.out.println();
 	    }
 	}
 
@@ -519,8 +523,8 @@ public class Engine {
 		Evaluator fe = new Evaluator();
 		
 		System.out.println("FINAL: ");
-		fe.evaluate(finalCorpus.getCutPoints(), gold.getCutPoints());
-		fe.printResults();
+		EvaluationResults results = fe.evaluate(finalCorpus.getCutPoints(), gold.getCutPoints());
+		results.printResults();
 		
 			
 //		int window2 = 4;
