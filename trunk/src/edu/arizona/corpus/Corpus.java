@@ -40,6 +40,7 @@ public class Corpus {
 	
 	public static String getFolder(String filetype) {
 		if (filetype.equals("downcase") || 
+			filetype.equals("downcase_spaces") ||
 			filetype.equals("preserve_case") ||
 			filetype.equals("naive")) {
 			return "letter";
@@ -76,6 +77,10 @@ public class Corpus {
 		} else if (type.equals("word")) {
 			cl.loadWords(path);
 			cl.type = CorpusType.Word;
+		} else if (type.equals("downcase_spaces")) {
+			cl.loadLowercaseWithSpaces(path);
+			cl.type = CorpusType.Letter;
+			cl.casePreserved = false;
 		} else if (type.equals("sent")) {
 			System.out.println("AUTOLOAD ERROR: sent TYPE NOT YET SUPPORTED");
 		} else {
@@ -238,6 +243,35 @@ public class Corpus {
 		}
 		
 		cutPoints = Utils.makeArray(tempCutPoints);
+	}
+	
+	public void loadLowercaseWithSpaces(String file) {
+		cleanChars = new ArrayList<String>();
+		segChars = new ArrayList<String>();
+		String input = "";
+		
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+			while (reader.ready()) {
+				input += reader.readLine();
+			}
+			reader.close();
+			
+			input = input.toLowerCase();
+			input = input.replaceAll("[^\\w\\s]", "");
+			input = input.replaceAll("\\s+", " ");
+			input = input.trim();
+			
+			for (char c : input.toCharArray()) {
+				cleanChars.add(c + "");
+				segChars.add(c + "");
+			}
+			
+			cutPoints = new boolean[cleanChars.size()-1];
+		} catch (Exception e) {
+			System.out.println("ERROR - " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	public void loadWithSpaces(String file) {
