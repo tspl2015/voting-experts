@@ -1,8 +1,11 @@
 package edu.arizona.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
+import java.util.Collection;
 
 import edu.arizona.corpus.Corpus;
 /**
@@ -124,5 +127,26 @@ public class Utils {
 	    	bidiCutArray[i] = forward[i] || reversed[i];
 	    
 	    return bidiCutArray;
-	} 
+	}
+	
+	public static String join(String[] strings, String delimiter) {
+		return join(Arrays.asList(strings), delimiter);
+	}
+	
+	public static <T> String join(Collection<T> objs, String delimiter) {
+		if (objs == null || objs.isEmpty()) {
+			return "";
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		Iterator<T> iter = objs.iterator();
+		sb.append(iter.next());
+		
+		while (iter.hasNext()) {
+			sb.append(delimiter);
+			sb.append(iter.next());
+		}
+		
+		return sb.toString();
+	}
 }
