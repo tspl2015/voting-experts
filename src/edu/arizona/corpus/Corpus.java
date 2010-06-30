@@ -248,19 +248,19 @@ public class Corpus {
 	public void loadLowercaseWithSpaces(String file) {
 		cleanChars = new ArrayList<String>();
 		segChars = new ArrayList<String>();
-		String input = "";
+		ArrayList<String> lines = new ArrayList<String>();
 		
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(file));
 			while (reader.ready()) {
-				input += reader.readLine();
+				lines.add(reader.readLine().trim());
 			}
 			reader.close();
 			
+			String input = Utils.join(lines, " ");
 			input = input.toLowerCase();
 			input = input.replaceAll("[^\\w\\s]", "");
 			input = input.replaceAll("\\s+", " ");
-			input = input.trim();
 			
 			for (char c : input.toCharArray()) {
 				cleanChars.add(c + "");
