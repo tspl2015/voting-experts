@@ -1,5 +1,8 @@
 package edu.arizona.util;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -148,5 +151,19 @@ public class Utils {
 		}
 		
 		return sb.toString();
+	}
+
+	public static String getRawInput(String prompt) {
+		String input = null;
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		
+		try {
+			System.out.print(prompt);
+			input = reader.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return input;
 	}
 }
