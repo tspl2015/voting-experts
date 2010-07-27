@@ -110,6 +110,10 @@ public class Engine {
 		Trie.addAll(backwardTrie, _backwardCorpus.getCleanChars(), trieDepth);
 		backwardTrie.generateStatistics();
 	}
+	
+	public Trie getForwardKnowledgeTrie() {
+		return forwardKnowledgeTrie;
+	}
 		
 	public List<String> getForwardCorpus() {
 		return _forwardCorpus.getCleanChars();
