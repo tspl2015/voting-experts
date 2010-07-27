@@ -619,5 +619,18 @@ public class Trie {
 			e.printStackTrace();
 		}
 	}
+
+	public double getIntEntropy(List<String> sequence) {
+		if (sequence == null || sequence.size() == 0)
+			return internalEntropy;
+
+		String child = sequence.get(0);
+		if (!children.containsKey(child))
+			return 0;
+
+		Trie t = children.get(child);
+		List<String> suffix = sequence.subList(1,sequence.size());
+		return t.getIntEntropy(suffix);
+	}
 	
 }
