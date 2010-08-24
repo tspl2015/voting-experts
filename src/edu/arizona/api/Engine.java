@@ -3,6 +3,7 @@ package edu.arizona.api;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.Vector;
 
 import edu.arizona.algorithm.PhonemeToMorpheme;
@@ -175,23 +176,63 @@ public class Engine {
 		
 		return partialSegmentation;
 	}
-
+		
 	// TODO: Still hardcodes local max and bidi
-	public Segmentation voteSuperBVE() {
+	public Segmentation voteSuperBVE(boolean localMax) {
 		double minDL = Double.MAX_VALUE;
 		Segmentation bestSegmentation = null;
+		Vector<Segmentation> segmentations = new Vector<Segmentation>();
+		Vector<Double> scores = new Vector<Double>();
 		
-		for (int window = 2; window < 9; window++) {
+		int maxWindow = 7;
+		
+		// Local max on
+		for (int window = 2; window <= maxWindow; window++) {
 			Segmentation temp = voteBVEMDL(window, true, false);
+			segmentations.add(temp);
 			if (temp.descriptionLength < minDL) {
 				minDL = temp.descriptionLength;
 				bestSegmentation = temp;
 			}
 		}
-
-		partialSegmentation = bestSegmentation;
 		
-		System.out.println(bestSegmentation);
+		// Local max off
+		for (int window = 2; window <= maxWindow; window++) {
+			Segmentation temp = voteBVEMDL(window, false, false);
+			segmentations.add(temp);
+			if (temp.descriptionLength < minDL) {
+				minDL = temp.descriptionLength;
+				bestSegmentation = temp;
+			}
+		}
+		
+		for (Segmentation s : segmentations) {
+			Evaluator e = new Evaluator();
+			EvaluationResults results = e.evaluate(s, getCorpus());
+			scores.add(results.boundaryF1());
+		}
+		
+//		System.out.println(scores);
+		
+		double maxBF = Double.MIN_VALUE;
+		double meanBF = 0.0;
+		for (Double bf : scores) {
+			if (bf > maxBF) { maxBF = bf; }
+			meanBF += bf;
+		}
+		meanBF /= scores.size();
+		
+		Evaluator e = new Evaluator();
+		EvaluationResults results = e.evaluate(bestSegmentation, getCorpus());
+		double mdlBF = results.boundaryF1();
+		double percentOfBest = mdlBF / maxBF;
+		
+		partialSegmentation = bestSegmentation;
+//		System.out.println(bestSegmentation);
+		
+		System.out.println("MDL REPORT: ");
+		System.out.println(getCorpus().getName() + "\t" + NF.format(meanBF) + "\t" +
+			NF.format(mdlBF) + "\t" + NF.format(maxBF) + "\t" + NF.format(percentOfBest));
 		
 		return bestSegmentation;
 	}
@@ -498,10 +539,14 @@ public class Engine {
 	
 	// Now less wasteful!
 	public static void mdl(Corpus corpus) {
+		mdl(corpus, 9);
+	}
+	
+	public static void mdl(Corpus corpus, int maxWindowSize) {
 		System.out.println("Window Size\tThreshold\tLocal Max?\tDescription Length\tPrecision\tRecall\tF-Measure");
 		
 		Vector<Segmentation> segmentations = new Vector<Segmentation>();
-		for (int window = 3; window < 9; window++) {
+		for (int window = 3; window < maxWindowSize; window++) {
 			Engine bidi = new Engine(corpus, window+1);
 			segmentations.addAll(bidi.voteAllThresholds(window, 0, window));
 		}	
@@ -537,11 +582,12 @@ public class Engine {
 	public static boolean evalMDL(Segmentation s, boolean[] actual) {
 		Evaluator e = new Evaluator("*");
 		
-	    e.evaluate(s.cutPoints, actual);
+	    EvaluationResults results = e.evaluate(s.cutPoints, actual);
 	    
 	    // Don't bother printing if F-measure is NaN (means threshold was too high for any segmentation
 	    if (!Double.isNaN(e.fMeasure)) {
-	    	System.out.println(s.makeString(e));
+//	    	System.out.println(s.makeString(e));
+	    	results.printResults();
 	    	return true;
 	    } else {
 	    	System.out.println("WTF?");
