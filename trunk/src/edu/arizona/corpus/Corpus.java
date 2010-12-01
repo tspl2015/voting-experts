@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import edu.arizona.trie.Trie;
 import edu.arizona.util.Utils;
 
 /**
@@ -15,7 +16,7 @@ import edu.arizona.util.Utils;
 */
 public class Corpus {
 
-	public enum CorpusType { Letter, Word, Syllable };
+	public enum CorpusType { LETTER, WORD, SYLLABLE };
 	
 	private List<String> cleanChars = new ArrayList<String>();
 	private List<String> segChars = new ArrayList<String>();
@@ -25,13 +26,13 @@ public class Corpus {
 	private boolean[] cutPoints;
 	private String name = "CORPUS";
 	
-	CorpusType type = CorpusType.Letter;
+	CorpusType type = CorpusType.LETTER;
 	boolean casePreserved = false; // only meaningful for letter type
 
 	public static final String BOUNDARY = "*";
 	
 	public static boolean isBoundary(String s) {
-		return s.startsWith(BOUNDARY);
+		return s.startsWith(BOUNDARY) || s.equals("|");
 	}
 	
 	public static boolean isBoundary(Character c) {
@@ -49,6 +50,62 @@ public class Corpus {
 		}
 	}
 	
+	public static String getFolder(CorpusType type) {
+		switch (type) {
+		case LETTER: return "letter";
+		case SYLLABLE: return "syllable";
+		case WORD: return "word";
+		}
+		return null;
+	}
+	
+	// Assumes you don't want to preserve spaces
+	public static Corpus autoLoad(String name, CorpusType type, boolean preserveCase) {
+		return autoLoad(name, type, preserveCase, false);
+	}
+	
+	// New version with safer parameters
+	public static Corpus autoLoad(String name, CorpusType type, boolean preserveCase, boolean preserveSpaces) {
+		Corpus cl = new Corpus();
+
+        String wd = System.getProperty("user.dir");
+
+		String path = wd + "/" + "input/" + getFolder(type) + "/" + name + ".txt";
+
+		cl.name = name;
+		cl.type = type;
+		
+		switch (type) {
+		
+		case LETTER:
+			cl.casePreserved = preserveCase;
+			if (preserveCase) {
+				if (preserveSpaces) {
+					cl.loadWithSpaces(path);
+				} else {
+					cl.load(path, false);
+				}
+			} else {
+				if (preserveSpaces) {
+					cl.loadLowercaseWithSpaces(path);
+				} else {
+					cl.load(path, true);
+				}
+			}
+			break;
+
+		case SYLLABLE:
+			cl.loadSyllables(path);
+			break;
+		
+		case WORD:
+			cl.loadWords(path);
+			break;
+		}
+		
+		return cl;
+	}
+	
 	// input is of the form "br87", "case"
 	public static Corpus autoLoad(String file, String type) {
 		Corpus cl = new Corpus();
@@ -61,25 +118,25 @@ public class Corpus {
 		
 		if (type.equals("preserve_case")) {
 			cl.load(path, false);
-			cl.type = CorpusType.Letter;
+			cl.type = CorpusType.LETTER;
 			cl.casePreserved = true;
 		} else if (type.equals("downcase")) {
 			cl.load(path, true);
-			cl.type = CorpusType.Letter;
+			cl.type = CorpusType.LETTER;
 			cl.casePreserved = false;
 		} else if (type.equals("naive")) {
-			cl.type = CorpusType.Letter;
+			cl.type = CorpusType.LETTER;
 			cl.loadWithSpaces(path);
 			cl.casePreserved = true;
 		} else if (type.equals("syllable")) {
 			cl.loadSyllables(path);
-			cl.type = CorpusType.Syllable;
+			cl.type = CorpusType.SYLLABLE;
 		} else if (type.equals("word")) {
 			cl.loadWords(path);
-			cl.type = CorpusType.Word;
+			cl.type = CorpusType.WORD;
 		} else if (type.equals("downcase_spaces")) {
 			cl.loadLowercaseWithSpaces(path);
-			cl.type = CorpusType.Letter;
+			cl.type = CorpusType.LETTER;
 			cl.casePreserved = false;
 		} else if (type.equals("sent")) {
 			System.out.println("AUTOLOAD ERROR: sent TYPE NOT YET SUPPORTED");
@@ -306,7 +363,7 @@ public class Corpus {
 			String corpus = in.readLine().trim();
 			in.close();
 
-			if (ctype.equals(CorpusType.Letter)) {
+			if (ctype.equals(CorpusType.LETTER)) {
 				cleanChars = new ArrayList<String>();
 				segChars = new ArrayList<String>();
 	
@@ -316,7 +373,7 @@ public class Corpus {
 					segChars.add(Character.toString(c));
 				}    
 				
-			} else if (ctype.equals(CorpusType.Word)) {
+			} else if (ctype.equals(CorpusType.WORD)) {
 				cleanChars = Arrays.asList(corpus.trim().split("\\s+"));
 				segChars = cleanChars; // is this OK?
 			}
@@ -522,5 +579,19 @@ public class Corpus {
 			System.out.println("ERROR - " + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+	
+	public Trie makeForwardTrie(int depth) {
+		Trie forwardTrie = new Trie();
+		Trie.addAll(forwardTrie, getCleanChars(), depth);
+		forwardTrie.generateStatistics();
+		return forwardTrie;
+	}
+	
+	public Trie makeBackwardTrie(int depth) {
+		Trie backwardTrie = new Trie();
+		Trie.addAll(backwardTrie, getReversed(), depth);
+		backwardTrie.generateStatistics();
+		return backwardTrie;
 	}
 }

@@ -4,7 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.List;
 
-import edu.arizona.api.Engine.Segmentation;
+import edu.arizona.api.Segmentation;
 
 
 /**
@@ -60,7 +60,7 @@ public class CorpusWriter {
 			System.out.println("ERROR: Cut point length mismatch in writer");
 		}
 		
-		boolean spaces = (corpus.type.equals(Corpus.CorpusType.Word));
+		boolean spaces = (corpus.type.equals(Corpus.CorpusType.WORD));
 		
 		try {
 			PrintStream out = new PrintStream("output/" + fileName);
