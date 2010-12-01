@@ -106,8 +106,7 @@ public class PhonemeToMorpheme {
 			ptm.runAlgorithm(threshold);
 			
 			System.out.println("THRESHOLD: " + NF.format(threshold));
-			Evaluator e = new Evaluator();
-			e.evaluate(ptm.getCutPoints(), c.getCutPoints()).printResults();
+			Evaluator.evaluate(ptm.getCutPoints(), c.getCutPoints()).printResults();
 			//e.printResults();
 		}
 		

@@ -5,86 +5,78 @@
  */
 package edu.arizona.evaluation;
 
-import edu.arizona.api.Engine.Segmentation;
+import java.util.Arrays;
+
+import edu.arizona.api.Segmentation;
 import edu.arizona.corpus.Corpus;
 /**
  *
  * @author  Wesley Kerr, Daniel Hewlett
  */
 public class Evaluator {
+	
+	// Evaluate the "All Locations" baseline which segments at every possible location 
+	public static EvaluationResults evaluateAllLocations(Corpus c) {
+		return evaluateAllLocations(c.getCutPoints());
+	}
+	
+	public static EvaluationResults evaluateAllLocations(boolean[] actual) {
+		boolean[] allCutPoints = new boolean[actual.length];
+		Arrays.fill(allCutPoints, true);
+		return evaluate(allCutPoints, actual);
+	}
+	
+	// Evaluate a proposed segmentation against the original corpus
+	public static EvaluationResults evaluate(Segmentation s, Corpus c) {
+		return evaluate(s.cutPoints, c.getCutPoints());
+	}   
    
-	public String delimiter;
-		
-	public int correctChunks;
+	public static EvaluationResults evaluate(boolean[] ve, boolean[] actual) { 
+		int correctChunks = 0;
    
-    public int numExact;
-    public int numDangling;
-    public int numLost;
-    public int n;
-    public int numUnigrams; // meaning a chunk that has length 1
-       
-    public int numTruePositives = 0;
-    public int numFalsePositives = 0;
-    public int numTrueNegatives = 0;
-    public int numFalseNegatives= 0;
-    
-//    int numPositives = 0;
-    public int numNegatives = 0;
-    
-    public double precision;
-    public double recall;
-    public double fMeasure;
-    
-//    public double truePositiveRate; // not needed, is just recall
-    public double falsePositiveRate;
-   
-   /** Creates a new instance of Evaluator */
-   public Evaluator(String delim) {
-	   delimiter = delim;
-   }
-   
-   public Evaluator() {
-	   delimiter = Corpus.BOUNDARY;
-   }
-   
-   // Convenience function
-   public EvaluationResults evaluate(Segmentation s, Corpus c) {
-	   return evaluate(s.cutPoints, c.getCutPoints());
-   }
-   
-   public EvaluationResults evaluate(boolean[] ve, boolean[] actual) { 
-	   if (ve.length != actual.length) {
-		   throw new RuntimeException("CUT POINT LENGTHS DO NOT MATCH: " + ve.length + " should equal " + actual.length);
-	   }
+		int numExact;
+		int numDangling;
+		int numLost;
+	   
+		int numTruePositives = 0;
+		int numFalsePositives = 0;
+		int numTrueNegatives = 0;
+		int numFalseNegatives= 0;
+	
+		int numNegatives = 0;
+
+		if (ve.length != actual.length) {
+			throw new RuntimeException("CUT POINT LENGTHS DO NOT MATCH: " + ve.length + " should equal " + actual.length);
+		}
 	   
 //      System.out.println("evaluating...");
-      int length = ve.length;
+		int length = ve.length;
       
-      int veBoundCount = 0;
-      for (int i = 0; i < ve.length; ++i) {
-         if (ve[i]) ++veBoundCount;
-      }
+		int veBoundCount = 0;
+		for (int i = 0; i < ve.length; ++i) {
+			if (ve[i]) ++veBoundCount;
+		}
       
-      numExact = numLost = numDangling = 0;
+		numExact = numLost = numDangling = 0;
       
-      int l1, l2, r1, r2;
-      l1 = l2 = 0; // no effect, why is this here?
+		int l1, l2, r1, r2;
+		l1 = l2 = 0; // no effect, why is this here?
       
-      while (l1 < length) {
-         r1 = l1+1;
+		while (l1 < length) {
+			r1 = l1+1;
          
-         while (r1 < length && !actual[r1]) {
-            ++r1;
-         }
+			while (r1 < length && !actual[r1]) {
+				++r1;
+			}
          
-         l2 = l1;
-         r2 = r1;
+			l2 = l1;
+			r2 = r1;
          
-         while (l2 >=0 && !ve[l2]) --l2;
-         while (r2 < length && !ve[r2]) ++r2;
+			while (l2 >=0 && !ve[l2]) --l2;
+			while (r2 < length && !ve[r2]) ++r2;
          
-         if (r1 == r2 && l1 == l2) {
-            ++numExact;
+			if (r1 == r2 && l1 == l2) {
+				++numExact;
             
             int divider = 0;
             for (int i = l2+1; i < r2; ++i) {
