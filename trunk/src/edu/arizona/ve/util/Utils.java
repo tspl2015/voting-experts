@@ -132,6 +132,14 @@ public class Utils {
 	    return bidiCutArray;
 	}
 	
+	public static boolean[] simpleUnion(boolean[] first, boolean[] second) {
+		boolean[] union = new boolean[first.length];
+	    for (int i = 0; i < first.length; i++) 
+	    	union[i] = first[i] || second[i];
+	    
+	    return union;
+	}
+	
 	public static String join(String[] strings, String delimiter) {
 		return join(Arrays.asList(strings), delimiter);
 	}
