@@ -2,7 +2,9 @@ package edu.arizona.ve.analysis;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import edu.arizona.ve.corpus.Corpus;
 import edu.arizona.ve.corpus.Corpus.CorpusType;
@@ -10,13 +12,26 @@ import edu.arizona.ve.experts.BackwardEntropyExpert;
 import edu.arizona.ve.experts.ForwardEntropyExpert;
 import edu.arizona.ve.experts.SurprisalExpert;
 import edu.arizona.ve.trie.Trie;
-import edu.arizona.ve.util.Utils;
 
 public class ErrorAnalyzer {
 
 	public static boolean scoreWindow(List<Boolean> actual, boolean[] ve) {
+//		System.out.println(actual);
+//		System.out.println(Arrays.toString(ve));
+//		
+//		"a".charAt(0);
+		
 		for (int i = 0; i < actual.size(); i++) {
 			if (actual.get(i) != ve[i])
+				return false;
+		}
+		
+		return true;
+	}
+	
+	public static boolean scorePrecision(List<Boolean> actual, boolean[] ve) {
+		for (int i = 0; i < actual.size(); i++) {
+			if (ve[i] && !actual.get(i))
 				return false;
 		}
 		
@@ -26,6 +41,8 @@ public class ErrorAnalyzer {
 	public static void analyzeErrors(Corpus corpus, int windowSize) {
 		System.out.println("========================================================");
 		System.out.println("Performing Error Analysis for Window Size " + windowSize);
+		
+		HashMap<List<String>, HashMap<List<Boolean>, Integer>> m = new HashMap<List<String>, HashMap<List<Boolean>, Integer>>();
 		
 		Trie trie = corpus.makeForwardTrie(windowSize + 1);
 		ForwardEntropyExpert fe = new ForwardEntropyExpert(trie);
@@ -43,11 +60,33 @@ public class ErrorAnalyzer {
 		int zeroWindows = 0;
 		int multWindows = 0;
 		int veErrorWindows = 0, seErrorWindows = 0, feErrorWindows = 0, beErrorWindows = 0;
+		int fePrecisionWindows = 0;
 		int totalVoteChances = 0;
 		int errors = 0;
 		for (int i = 0; i <= corpus.getCleanChars().size() - windowSize; i++) {
 			List<String> subSeq = Collections.unmodifiableList(corpus.getCleanChars().subList(i, i + windowSize));
 			List<Boolean> actualCuts = Collections.unmodifiableList(cuts.subList(i, i + windowSize + 1));
+			
+			int val = 0;
+            HashMap<List<Boolean>, Integer> temp = new HashMap<List<Boolean>, Integer>();
+            temp.put(actualCuts, 1);
+            //HashMap<List<String>, HashMap<List<Boolean>, Integer>> temp2;
+            //temp2.put(subSeq, temp);
+            
+            if(m.containsKey(subSeq)) {
+            	temp = m.get(subSeq);
+            	if(temp.containsKey(actualCuts)) {
+            		val = temp.get(actualCuts);
+            		temp.put(actualCuts, ++val);
+            		//val = m.get(subSeq);
+            		//m.put(subSeq, ++val);
+            	}
+            	else
+            		temp.put(actualCuts, 1);
+            }
+            else {
+            	m.put(subSeq, temp);
+            }
 			
 			int numCutPoints = countCutPoints(actualCuts);
 			errors += Math.abs(numCutPoints - 1);
@@ -59,28 +98,38 @@ public class ErrorAnalyzer {
 			boolean[] feCuts = fe.segment(subSeq);
 			if (!scoreWindow(actualCuts, feCuts))
 				feErrorWindows++;
+			if (scorePrecision(actualCuts, feCuts)) 
+				fePrecisionWindows++;
 			
-			boolean[] beCuts = be.segment(subSeq);
-			if (!scoreWindow(actualCuts, beCuts))
-				beErrorWindows++;
+//			boolean[] beCuts = be.segment(subSeq);
+//			if (!scoreWindow(actualCuts, beCuts))
+//				beErrorWindows++;
+//			
+//			boolean[] seCuts = se.segment(subSeq);
+//			if (!scoreWindow(actualCuts, seCuts))
+//				seErrorWindows++;
 			
-			boolean[] seCuts = se.segment(subSeq);
-			if (!scoreWindow(actualCuts, seCuts))
-				seErrorWindows++;
-			
-			boolean correct = scoreWindow(actualCuts, Utils.simpleUnion(Utils.simpleUnion(feCuts, seCuts), beCuts));
-			if (!correct) { veErrorWindows++; };
+//			boolean correct = scoreWindow(actualCuts, Utils.simpleUnion(Utils.simpleUnion(feCuts, seCuts), beCuts));
+//			if (!correct) { veErrorWindows++; };
 			
 			totalWindows++;
 			totalVoteChances += actualCuts.size();
 //			System.out.println(subSeq + " " + actualCuts);
 		}
 		
+		int myTotal = countHashValues(m);
+        int totalHashErrors = countHashErrors(m);
+        System.out.println(">> Total best case: " + totalHashErrors);
+        System.out.println(">> Errors are = " + (totalWindows - totalHashErrors));
+        System.out.println(">> Forced Errors: " + (totalWindows - totalHashErrors) + " (" + ((double) (totalWindows - totalHashErrors) / totalWindows) * 100 + "%)");
+        System.out.println(">> My total is: " + myTotal);
+		
 		System.out.println("Windows: " + totalWindows);
 		// This one isn't exactly right
 //		System.out.println("VE Error Windows: " + veErrorWindows + " (" + ((double) veErrorWindows / totalWindows) * 100 + "%)");
-		System.out.println("Freq Error Windows: " + feErrorWindows + " (" + ((double) feErrorWindows / totalWindows) * 100 + "%)");
-		System.out.println("Ent Error Windows: " + seErrorWindows + " (" + ((double) seErrorWindows / totalWindows) * 100 + "%)");
+		System.out.println("Entropy Error Windows: " + feErrorWindows + " (" + ((double) feErrorWindows / totalWindows) * 100 + "%)");
+		System.out.println("Entropy Prec. Windows: " + fePrecisionWindows + " (" + ((double) fePrecisionWindows / totalWindows) * 100 + "%)");
+//		System.out.println("Surp. Error Windows: " + seErrorWindows + " (" + ((double) seErrorWindows / totalWindows) * 100 + "%)");
 		System.out.println("Forced Error Windows: " + errorWindows + " (" + ((double) errorWindows / totalWindows) * 100 + "%)");
 		System.out.println("  Zero Cuts: " + zeroWindows + " (" + ((double) zeroWindows / errorWindows) * 100 + "%)");
 		System.out.println("  Multiple Cuts: " + multWindows + " (" + ((double) multWindows / errorWindows) * 100 + "%)");
@@ -97,13 +146,48 @@ public class ErrorAnalyzer {
 		return count;
 	}
 	
+    public static int countHashValues(HashMap<List<String>, HashMap<List<Boolean>, Integer>> m) {
+    	int count = 0;
+    	Set<List<String>> keys = m.keySet();
+    	
+    	for(List<String> i : keys) {
+    		HashMap<List<Boolean>, Integer> temp = m.get(i);
+    		Set<List<Boolean>> keys2 = temp.keySet();
+    		for(List<Boolean> j : keys2) {
+    			int v = (Integer)temp.get(j);
+    			count += v;
+    		}
+    	}
+    	return count;
+    }
+    
+    public static int countHashErrors(HashMap<List<String>, HashMap<List<Boolean>, Integer>> m) {
+    	int total = 0;
+    	Set<List<String>> keys = m.keySet();
+    	int v = 0;
+    	int max = 0;
+    	
+    	for(List<String> i : keys) {
+    		HashMap<List<Boolean>, Integer> temp = m.get(i);
+    		Set<List<Boolean>> keys2 = temp.keySet();
+    		for(List<Boolean> j : keys2) {
+    			v = (Integer)temp.get(j);
+    			if(v > max)
+    				max = v;
+    		}
+    		total += max;
+    		max = 0;
+    	}
+    	return total;
+    }
+	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-//		Corpus corpus = Corpus.autoLoad("br87", CorpusType.LETTER, true);
-		Corpus corpus = Corpus.autoLoad("caesar", CorpusType.LETTER, false);
-		for (int windowSize = 2; windowSize <= 6; windowSize++) {
+		Corpus corpus = Corpus.autoLoad("br87", CorpusType.LETTER, true);
+//		Corpus corpus = Corpus.autoLoad("caesar", CorpusType.LETTER, false);
+		for (int windowSize = 5; windowSize <= 5; windowSize++) {
 			analyzeErrors(corpus, windowSize);
 		}
 	}
