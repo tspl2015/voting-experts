@@ -1,6 +1,7 @@
 package edu.arizona.ve.analysis;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -8,8 +9,9 @@ import java.util.Set;
 
 import edu.arizona.ve.corpus.Corpus;
 import edu.arizona.ve.corpus.Corpus.CorpusType;
-import edu.arizona.ve.experts.BackwardEntropyExpert;
+import edu.arizona.ve.experts.ChunkinessExpert;
 import edu.arizona.ve.experts.ForwardEntropyExpert;
+import edu.arizona.ve.experts.MorphemeExpert;
 import edu.arizona.ve.experts.SurprisalExpert;
 import edu.arizona.ve.trie.Trie;
 
@@ -45,9 +47,15 @@ public class ErrorAnalyzer {
 		HashMap<List<String>, HashMap<List<Boolean>, Integer>> m = new HashMap<List<String>, HashMap<List<Boolean>, Integer>>();
 		
 		Trie trie = corpus.makeForwardTrie(windowSize + 1);
+		Trie backwardTrie = corpus.makeBackwardTrie(windowSize + 1);
+		
 		ForwardEntropyExpert fe = new ForwardEntropyExpert(trie);
-		BackwardEntropyExpert be = new BackwardEntropyExpert(corpus.makeBackwardTrie(windowSize + 1));
+//		BackwardEntropyExpert be = new BackwardEntropyExpert(backwardTrie);
+//		BackwardPhonemeToMorphemeExpert be = new BackwardPhonemeToMorphemeExpert(backwardTrie);
+		MorphemeExpert be = new MorphemeExpert(trie, backwardTrie);
 		SurprisalExpert se = new SurprisalExpert(trie);
+		ChunkinessExpert ce = new ChunkinessExpert(trie, backwardTrie);
+//		MaximumLikelihoodExpert me = new MaximumLikelihoodExpert()
 		
 		ArrayList<Boolean> cuts = new ArrayList<Boolean>(corpus.getCutPoints().length + 2);
 		cuts.add(true);
@@ -59,7 +67,9 @@ public class ErrorAnalyzer {
 		int errorWindows = 0;
 		int zeroWindows = 0;
 		int multWindows = 0;
-		int veErrorWindows = 0, seErrorWindows = 0, feErrorWindows = 0, beErrorWindows = 0;
+		int veErrorWindows = 0, seErrorWindows = 0, feErrorWindows = 0, beErrorWindows = 0, ceErrorWindows = 0, cePrecisionWindows = 0, sePrecisionWindows = 0;
+		int bePrecisionWindows = 0;
+		int agreeWindows = 0;
 		int fePrecisionWindows = 0;
 		int totalVoteChances = 0;
 		int errors = 0;
@@ -101,17 +111,32 @@ public class ErrorAnalyzer {
 			if (scorePrecision(actualCuts, feCuts)) 
 				fePrecisionWindows++;
 			
-//			boolean[] beCuts = be.segment(subSeq);
-//			if (!scoreWindow(actualCuts, beCuts))
-//				beErrorWindows++;
+			boolean[] beCuts = be.segment(subSeq);
+			if (!scoreWindow(actualCuts, beCuts))
+				beErrorWindows++;
+			if (scorePrecision(actualCuts, beCuts)) 
+				bePrecisionWindows++;
 //			
-//			boolean[] seCuts = se.segment(subSeq);
-//			if (!scoreWindow(actualCuts, seCuts))
-//				seErrorWindows++;
+			boolean[] seCuts = se.segment(subSeq);
+			if (!scoreWindow(actualCuts, seCuts))
+				seErrorWindows++;
+			if (scorePrecision(actualCuts, seCuts)) 
+				sePrecisionWindows++;
+			
 			
 //			boolean correct = scoreWindow(actualCuts, Utils.simpleUnion(Utils.simpleUnion(feCuts, seCuts), beCuts));
 //			if (!correct) { veErrorWindows++; };
 			
+			boolean[] ceCuts = ce.segment(subSeq);
+            if (!scoreWindow(actualCuts, ceCuts))
+                ceErrorWindows++;
+            if (scorePrecision(actualCuts, ceCuts))
+                cePrecisionWindows++;
+			
+            if (Arrays.equals(beCuts, feCuts)) {
+            	agreeWindows++;
+            }
+            
 			totalWindows++;
 			totalVoteChances += actualCuts.size();
 //			System.out.println(subSeq + " " + actualCuts);
@@ -127,12 +152,22 @@ public class ErrorAnalyzer {
 		System.out.println("Windows: " + totalWindows);
 		// This one isn't exactly right
 //		System.out.println("VE Error Windows: " + veErrorWindows + " (" + ((double) veErrorWindows / totalWindows) * 100 + "%)");
-		System.out.println("Entropy Error Windows: " + feErrorWindows + " (" + ((double) feErrorWindows / totalWindows) * 100 + "%)");
-		System.out.println("Entropy Prec. Windows: " + fePrecisionWindows + " (" + ((double) fePrecisionWindows / totalWindows) * 100 + "%)");
+//		System.out.println("Entropy Error Windows: " + feErrorWindows + " (" + ((double) feErrorWindows / totalWindows) * 100 + "%)");
+		System.out.println("F Entropy Prec. Windows: " + fePrecisionWindows + " (" + ((double) fePrecisionWindows / totalWindows) * 100 + "%)");
+		System.out.println("B Entropy Prec. Windows: " + bePrecisionWindows + " (" + ((double) bePrecisionWindows / totalWindows) * 100 + "%)");
+
+		System.out.println("Surprisal Prec. Windows: " + sePrecisionWindows + " (" + ((double) sePrecisionWindows / totalWindows) * 100 + "%)");
+
+		System.out.println("Agreement Windows: " + agreeWindows + " (" + ((double) agreeWindows / totalWindows) * 100 + "%)");
+		
+//		System.out.println("Chunk Error Windows: " + ceErrorWindows + " (" + ((double) ceErrorWindows / totalWindows) * 100 + "%)");
+		System.out.println("Chunk Prec. Windows: " + cePrecisionWindows + " (" + ((double) cePrecisionWindows / totalWindows) * 100 + "%)");
+		
+		
 //		System.out.println("Surp. Error Windows: " + seErrorWindows + " (" + ((double) seErrorWindows / totalWindows) * 100 + "%)");
-		System.out.println("Forced Error Windows: " + errorWindows + " (" + ((double) errorWindows / totalWindows) * 100 + "%)");
-		System.out.println("  Zero Cuts: " + zeroWindows + " (" + ((double) zeroWindows / errorWindows) * 100 + "%)");
-		System.out.println("  Multiple Cuts: " + multWindows + " (" + ((double) multWindows / errorWindows) * 100 + "%)");
+//		System.out.println("Forced Error Windows: " + errorWindows + " (" + ((double) errorWindows / totalWindows) * 100 + "%)");
+//		System.out.println("  Zero Cuts: " + zeroWindows + " (" + ((double) zeroWindows / errorWindows) * 100 + "%)");
+//		System.out.println("  Multiple Cuts: " + multWindows + " (" + ((double) multWindows / errorWindows) * 100 + "%)");
 //		System.out.println(zeroWindows + " " + multWindows);
 //		System.out.println("Vote Chances: " + totalVoteChances);
 //		System.out.println("Errors: " + errors + "(" + ((double) errors / totalVoteChances) * 100 + "%)");
@@ -186,8 +221,8 @@ public class ErrorAnalyzer {
 	 */
 	public static void main(String[] args) {
 		Corpus corpus = Corpus.autoLoad("br87", CorpusType.LETTER, true);
-//		Corpus corpus = Corpus.autoLoad("caesar", CorpusType.LETTER, false);
-		for (int windowSize = 5; windowSize <= 5; windowSize++) {
+//		Corpus corpus = Corpus.autoLoad("orwell-short", CorpusType.LETTER, false);
+		for (int windowSize = 4; windowSize <= 7; windowSize++) {
 			analyzeErrors(corpus, windowSize);
 		}
 	}

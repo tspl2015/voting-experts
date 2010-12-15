@@ -4,7 +4,6 @@ import java.util.List;
 
 import edu.arizona.ve.trie.Trie;
 
-
 /**
 *
 * @author  Daniel Hewlett
@@ -32,13 +31,11 @@ public class SurprisalExpert extends Expert {
 
 		scoreIEnt[segment.size()] = _trie.getStdIntEntropy(segment);
 
-		double minIEnt = scoreIEnt[1];
-
 		int cutFreq = 1;
-
+		double min = Double.MAX_VALUE;
 		for (int i = 1; i <= segment.size(); ++i) {
-			if (scoreIEnt[i] <= minIEnt) {
-				minIEnt = scoreIEnt[i];
+			if (scoreIEnt[i] <= min) {
+				min = scoreIEnt[i];
 				cutFreq = i;
 			}
 		}

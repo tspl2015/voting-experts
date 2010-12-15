@@ -6,7 +6,6 @@ import java.util.List;
 
 import edu.arizona.ve.trie.Trie;
 
-
 /**
 *
 * @author  Daniel Hewlett
@@ -14,8 +13,8 @@ import edu.arizona.ve.trie.Trie;
 public class BackwardEntropyExpert extends Expert {
 
 	// Make sure trie is a backward trie!
-	public BackwardEntropyExpert(Trie trie) {
-		super(trie);
+	public BackwardEntropyExpert(Trie backwardTrie) {
+		super(backwardTrie);
 	}
 
 	@Override
@@ -24,9 +23,6 @@ public class BackwardEntropyExpert extends Expert {
 		
 		double[] scoreBEnt = new double[cutSize];
 		boolean[] votes = new boolean[cutSize];
-		
-		List<String> revSegment = new ArrayList<String>(segment);
-		Collections.reverse(revSegment);
 		
 		List<String> seg, rev;
 		for (int i = 0; i < segment.size(); ++i) {

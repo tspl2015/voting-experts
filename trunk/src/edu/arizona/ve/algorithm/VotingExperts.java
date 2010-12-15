@@ -8,10 +8,14 @@ import java.util.List;
 
 import edu.arizona.ve.corpus.Corpus;
 import edu.arizona.ve.experts.BackwardEntropyExpert;
+import edu.arizona.ve.experts.BackwardPhonemeToMorphemeExpert;
+import edu.arizona.ve.experts.ChunkinessExpert;
 import edu.arizona.ve.experts.Expert;
 import edu.arizona.ve.experts.ForwardEntropyExpert;
 import edu.arizona.ve.experts.KnowledgeExpert;
+import edu.arizona.ve.experts.MaximumLikelihoodExpert;
 import edu.arizona.ve.experts.MorphemeExpert;
+import edu.arizona.ve.experts.PhonemeToMorphemeExpert;
 import edu.arizona.ve.experts.SurprisalExpert;
 import edu.arizona.ve.trie.Trie;
 
@@ -254,8 +258,26 @@ public class VotingExperts {
 		ve.addExpert(new SurprisalExpert(forward), 1);
 		ve.addExpert(new ForwardEntropyExpert(forward), 1);
 		ve.addExpert(new BackwardEntropyExpert(backward), 1);
-		ve.addExpert(new KnowledgeExpert(knowledgeTrie), 8);
+		ve.addExpert(new KnowledgeExpert(knowledgeTrie), 2);
 		return ve;
 	}
 
+	public static VotingExperts makeChunkVE(Corpus c, Trie forward, Trie backward, int windowSize, int threshold) {
+		VotingExperts ve = new VotingExperts(c, windowSize, threshold);
+		ve.addExpert(new ChunkinessExpert(forward, backward), 1);
+		
+		return ve;
+	}
+	
+	public static VotingExperts makeOmniVE(Corpus c, Trie forward, Trie backward, int windowSize, int threshold) {
+		VotingExperts ve = new VotingExperts(c, windowSize, threshold);
+		ve.addExpert(new SurprisalExpert(forward), 1);
+		ve.addExpert(new ForwardEntropyExpert(forward), 1);
+		ve.addExpert(new BackwardEntropyExpert(backward), 1);
+		ve.addExpert(new ChunkinessExpert(forward, backward), 1);
+		ve.addExpert(new PhonemeToMorphemeExpert(forward), 1);
+		ve.addExpert(new BackwardPhonemeToMorphemeExpert(backward), 1);
+		return ve;
+	}
+	
 }
