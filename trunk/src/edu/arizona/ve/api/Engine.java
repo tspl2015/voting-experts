@@ -1,11 +1,13 @@
 package edu.arizona.ve.api;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
 import edu.arizona.ve.algorithm.VotingExperts;
 import edu.arizona.ve.api.Segmentation.Direction;
 import edu.arizona.ve.corpus.Corpus;
+import edu.arizona.ve.corpus.Corpus.CorpusType;
 import edu.arizona.ve.corpus.CorpusWriter;
 import edu.arizona.ve.evaluation.EvaluationResults;
 import edu.arizona.ve.evaluation.Evaluator;
@@ -100,8 +102,11 @@ public class Engine {
 		
 		bidiSegmentation = null; // stop the printing of the bidi array, we're done with it
 		
+		boolean[] lastSegmentation = partialSegmentation.cutPoints;
+		
 		int i = 1;
-		for (int threshold = startThreshold - 1; threshold >= minThreshold; threshold-- ) {
+		int cyclesAtLevel = 0;
+		for (int threshold = startThreshold - 1; threshold >= minThreshold; ) {
 			Corpus partialInputRest = new Corpus();
 			partialInputRest.naiveLoad("output/" + corpus.getName()  + "-partial-" + i + ".txt", corpus.getType());
 			
@@ -117,6 +122,16 @@ public class Engine {
 				evaluate();
 			
 			i++;
+
+			threshold--;
+			
+//			if (Arrays.equals(partialSegmentation.cutPoints, lastSegmentation) || cyclesAtLevel > 6) {
+//				threshold--;
+//				cyclesAtLevel = 0;
+//			} else {
+//				cyclesAtLevel++;
+//			}
+			lastSegmentation = partialSegmentation.cutPoints;
 		}
 		
 		//Trie.extractWords(forwardKnowledgeTrie);
@@ -192,7 +207,7 @@ public class Engine {
 	    s.localMax = useLocalMax;
 	    s.descriptionLength = ve.computeDescriptionLength(forwardTrie);
 
-	    forwardSegmentation = s;
+	    forwardSegmentation = s;boolean[] lastSegmentation = partialSegmentation.cutPoints;
 	    
 	    return s;
 	}
@@ -382,10 +397,16 @@ public class Engine {
 	// Example of how to use the Engine class
 	public static void main(String[] args) {	
 		Engine.EVALUATE = true;
+		Engine.DEBUG = true;
 		
-		Corpus corpus = Corpus.autoLoad("zarathustra", "downcase");
-		Engine e = new Engine(corpus, 8);
-		e.voteBackward(7, 3, false);
+//		Corpus corpus = Corpus.autoLoad("zarathustra", "downcase");
+		Corpus corpus = Corpus.autoLoad("br87", CorpusType.LETTER, true);
+		
+		int window = 6;
+		
+		Engine e = new Engine(corpus, window+1);
+//		e.voteBackward(7, 3, false);
+		e.voteBVE(window, 0, false, true);
 		e.evaluate();
 		
 //		Engine.bidiBootstrap(corpus, 7, 14, 3, false);
