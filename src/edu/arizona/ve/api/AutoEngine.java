@@ -14,16 +14,16 @@ import edu.arizona.ve.util.NF;
 public class AutoEngine {
 
 	// For convenience, hard-coded maxWindow = 9 (larger windows can result in much longer running time)
-	public Segmentation autoVE(Corpus c) {
+	public static Segmentation autoVE(Corpus c) {
 		return autoVE(c, 9);
 	}
 	
-	public Segmentation autoVE(Corpus c, int maxWindow) {
+	public static Segmentation autoVE(Corpus c, int maxWindow) {
 		Vector<Segmentation> segmentations = new Vector<Segmentation>();
 		
 		for (int window = 2; window <= maxWindow; window++) {
-			Engine bidi = new Engine(c, window+1);
-			segmentations.addAll(bidi.voteAllThresholds(window, 0, window));
+			Engine engine = new Engine(c, window+1);
+			segmentations.addAll(engine.bidiVoteAllThresholds(window, 0, window));
 		}
 		
 		Collections.sort(segmentations);

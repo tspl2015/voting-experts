@@ -3,6 +3,7 @@ package edu.arizona.ve.algorithm;
 import java.util.List;
 
 import edu.arizona.ve.corpus.Corpus;
+import edu.arizona.ve.corpus.Corpus.CorpusType;
 import edu.arizona.ve.evaluation.Evaluator;
 import edu.arizona.ve.trie.Trie;
 import edu.arizona.ve.util.NF;
@@ -94,14 +95,16 @@ public class PhonemeToMorpheme {
 	public static void main(String[] args) {
 //		Corpus c = Corpus.autoLoad("latin-morph", "case");
 //		Corpus c = Corpus.autoLoad("latin", "word");
-		Corpus c = Corpus.autoLoad("caesar", "nocase");
-		int maxLen = 8;
+//		Corpus c = Corpus.autoLoad("caesar", "nocase");
+//		Corpus c = Corpus.autoLoad("orwell-short", CorpusType.LETTER, false);
+		Corpus c = Corpus.autoLoad("br87", CorpusType.LETTER, true);
+		int maxLen = 7;
 		Trie f = Trie.buildTrie(c, maxLen+1);
 		Trie b = Trie.buildTrie(c.getReverseCorpus(), maxLen+1);
 		
 //		Corpus morph = Corpus.autoLoad("inuktitut-morph", "case");
 		
-		for (double threshold = 0.7; threshold < 2.0; threshold += 0.1) {
+		for (double threshold = 0.0; threshold < 1.0; threshold += 0.1) {
 			PhonemeToMorpheme ptm = new PhonemeToMorpheme(f, b, c, maxLen);
 			ptm.runAlgorithm(threshold);
 			
