@@ -7,6 +7,7 @@ import edu.arizona.ve.corpus.Corpus;
 import edu.arizona.ve.evaluation.EvaluationResults;
 import edu.arizona.ve.evaluation.Evaluator;
 import edu.arizona.ve.util.NF;
+import edu.arizona.ve.util.Stats;
 
 /**
 * @author  Daniel Hewlett
@@ -77,13 +78,10 @@ public class AutoEngine {
 		
 //		System.out.println(scores);
 		
-		double maxBF = Double.MIN_VALUE;
-		double meanBF = 0.0;
-		for (Double bf : scores) {
-			if (bf > maxBF) { maxBF = bf; }
-			meanBF += bf;
-		}
-		meanBF /= scores.size();
+		double maxBF = Stats.max(scores);
+		double minBF = Stats.min(scores);
+		double meanBF = Stats.mean(scores);
+		double stdDev = Stats.stDev(scores);
 		
 		EvaluationResults results = Evaluator.evaluate(bestSegmentation, c);
 		double mdlBF = results.boundaryF1();
@@ -92,8 +90,17 @@ public class AutoEngine {
 //		System.out.println(bestSegmentation);
 		
 		System.out.println("MDL REPORT: ");
-		System.out.println(c.getName() + "\t" + NF.format(meanBF) + "\t" +
-			NF.format(mdlBF) + "\t" + NF.format(maxBF) + "\t" + NF.format(percentOfBest));
+		System.out.println(c.getName() + 
+				"   Mean: " + NF.format(meanBF) + 
+				"   StDev: " + NF.format(stdDev) + 
+				"   Min: " + NF.format(minBF) + 
+				"   Max: " + NF.format(maxBF) + 
+				"   MDL: " + NF.format(mdlBF) + 
+				"   % of Best: " + NF.format(percentOfBest));
+		
+		System.out.println("LATEX: ");
+		System.out.println("& " + NF.format(minBF) + " & " + NF.format(maxBF) + " & " + NF.format(meanBF) + 
+				   		" & " + NF.format(stdDev) + " & " + NF.format(mdlBF) + " & " + NF.format(percentOfBest) + " \\\\ \\hline");
 		
 		return bestSegmentation;
 	}

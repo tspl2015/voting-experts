@@ -16,13 +16,15 @@ public class AutoBVEDemo {
 	 */
 	public static void main(String[] args) {
 		// Load the corpus 
-//		Corpus corpus = Corpus.autoLoad("br87", CorpusType.LETTER, true);
-		Corpus corpus = Corpus.autoLoad("latin-morph", CorpusType.LETTER, false);
+		Corpus corpus = Corpus.autoLoad("br87-cmu", CorpusType.LETTER, true);
+//		Corpus corpus = Corpus.autoLoad("orwell-font1", CorpusType.WORD, true);
+
 		// Segment using BVE with MDL (self-setting parameters)
 		Segmentation segmentation = AutoEngine.autoBVE(corpus);
-//		Segmentation segmentation = AutoEngine.autoVE(corpus, 6);
+		
 		// Evaluate (compute precision, recall, F-measure, etc.) 
 		EvaluationResults results = Evaluator.evaluate(segmentation, corpus);
+		
 		// Print the important evaluation metrics
 		results.printResults();
 	}
