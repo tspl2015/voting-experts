@@ -50,18 +50,50 @@ public class Stats {
 	}
 	
 	/**
+	 * log_{2}(n) with log(0) = 0 semantics
+	 */
+	public static double log(double d) {
+		if (d == 0.0) {
+			return 0.0;
+		} else {
+			return Math.log(d) / Math.log(2); // I like bits better than nats
+		}
+	}
+	
+	public static double entropy(Collection<Double> frequencies) {
+		Vector<Double> probs = new Vector<Double>();
+		double total = 0.0;
+		
+		for (Double f : frequencies) {
+			total += f;
+		}
+		for (Double f : frequencies) {
+			probs.add(f / total);
+		}
+		
+		double h = 0.0;
+		for (Double p : probs) {
+			h -= p * log(p);
+		}
+		
+		return h;
+	}
+	
+	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		Vector<Double> data = new Vector<Double>();
 		data.add(1.0);
-		data.add(2.0);
-		data.add(3.0);
-		data.add(4.0);
+		data.add(1.0);
+		data.add(1.0);
+		data.add(1.0);
 		
 		System.out.println(mean(data));
 		System.out.println(max(data));
 		System.out.println(stDev(data));
+		
+		System.out.println(entropy(data));
 	}
 
 }
