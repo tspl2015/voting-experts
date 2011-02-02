@@ -34,9 +34,8 @@ public class Engine {
 	Trie forwardTrie;
 	Trie backwardTrie;
 
-	// The knowledge tries
+	// The knowledge trie for BVE
 	Trie forwardKnowledgeTrie;
-	Trie backwardKnowledgeTrie;
 	
 	// Segmentations
 	Segmentation forwardSegmentation = null;
@@ -83,9 +82,7 @@ public class Engine {
 	}
 
 	public Segmentation voteBVE(int window, int minThreshold, boolean useLocalMax, boolean bidiBVE) {
-		// Try to GC the backward trie, now that we don't need it for voting
-		backwardKnowledgeTrie = null;
-		
+
 		int startThreshold = window * (bidiBVE ? 3 : 2); // window + thresholdOffset 
 		
 		// Experimenting with dummy corpus 0 this just means the first time the knowledge expert won't do anything
@@ -139,11 +136,9 @@ public class Engine {
 		return partialSegmentation;
 	}
 	
-	public Segmentation voteBVEMDL(int window, boolean useLocalMax, boolean bidiBVE) {
-		// Try to GC the backward trie, now that we don't need it for voting
-		backwardKnowledgeTrie = null;
+	public List<Segmentation> voteBVEMDL(int window, boolean useLocalMax, boolean bidiBVE) {
 		
-		int startThreshold = window * (bidiBVE ? 3 : 2); // window + thresholdOffset 
+		int startThreshold = (window * (bidiBVE ? 3 : 2)) - 1; // window + thresholdOffset 
 		
 		// Experimenting with dummy corpus 0 this just means the first time the knowledge expert won't do anything
 		List<String> forwardKnowledgeCorpus = corpus.getCleanChars(); //new ArrayList<String>(bidiInput.getCleanChars());
@@ -163,6 +158,7 @@ public class Engine {
 		
 		double minDL = Double.MAX_VALUE;
 		Segmentation bestSegmentation = null;
+		Vector<Segmentation> segmentations = new Vector<Segmentation>();
 		
 		for (int threshold = startThreshold - 1; threshold >= 0; threshold-- ) {
 			Corpus partialInputRest = new Corpus();
@@ -182,15 +178,21 @@ public class Engine {
 				bestSegmentation = partialSegmentation;
 			}
 			
-			if (DEBUG)
+			segmentations.add(partialSegmentation);
+			
+			if (DEBUG) {
 				evaluate();
+				System.out.println();
+			}
 		}
 		
 		//Trie.extractWords(forwardKnowledgeTrie);
 		
 		partialSegmentation = bestSegmentation;
 		
-		return bestSegmentation;
+		return segmentations;
+		
+//		return bestSegmentation;
 	}
 	
 	public Segmentation voteTransfer(Corpus newCorpus, int window, int threshold, boolean useLocalMax) {
@@ -309,8 +311,10 @@ public class Engine {
 	    partialSegmentation = s;
 	    
 	    if (DEBUG) {
-		    System.out.println(pve.getVoteString(100));
-		    System.out.println(pve.getSegmentedString(100, threshold));
+//	    	System.out.println();
+//		    System.out.println(pve.getVoteString(100));
+//		    System.out.println(pve.getSegmentedString(100, threshold));
+//		    System.out.println(s.descriptionLength);
 	    }
 	    
 	    return s;

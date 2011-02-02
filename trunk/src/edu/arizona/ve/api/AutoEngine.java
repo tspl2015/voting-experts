@@ -24,18 +24,49 @@ public class AutoEngine {
 		
 		for (int window = 2; window <= maxWindow; window++) {
 			Engine engine = new Engine(c, window+1);
-			segmentations.addAll(engine.bidiVoteAllThresholds(window, 0, window));
+			segmentations.addAll(engine.voteAllThresholds(window, 0, window));
 		}
 		
 		Collections.sort(segmentations);
-		
 		Segmentation bestSegmentation = segmentations.get(0);
+
+		Vector<Double> scores = new Vector<Double>();
+		for (Segmentation seg : segmentations) {
+			EvaluationResults results = Evaluator.evaluate(seg.cutPoints, c.getCutPoints());
+			scores.add(results.boundaryF1());
+		}
+		
+		double maxBF = Stats.max(scores);
+		double minBF = Stats.min(scores);
+		double meanBF = Stats.mean(scores);
+		double stdDev = Stats.stDev(scores);
+		
+		EvaluationResults results = Evaluator.evaluate(bestSegmentation, c);
+		double mdlBF = results.boundaryF1();
+		double percentOfBest = mdlBF / maxBF;
+		
+//		System.out.println(bestSegmentation);
+		
+		System.out.println("MDL REPORT: ");
+		System.out.println(c.getName() + 
+				"   Mean: " + NF.format(meanBF) + 
+				"   StDev: " + NF.format(stdDev) + 
+				"   Min: " + NF.format(minBF) + 
+				"   Max: " + NF.format(maxBF) + 
+				"   MDL: " + NF.format(mdlBF) + 
+				"   % of Best: " + NF.format(percentOfBest));
+		
+		System.out.println("LATEX: ");
+		System.out.println("& " + NF.format(minBF) + " & " + NF.format(maxBF) + " & " + NF.format(meanBF) + 
+				   		" & " + NF.format(stdDev) + " & " + NF.format(mdlBF) + " & " + NF.format(percentOfBest) + " \\\\ \\hline");
+		
+		
 		return bestSegmentation;
 	}
 	
-	// For convenience, hard-coded maxWindow = 9 (larger windows can result in much longer running time)
+	// For convenience, hard-coded maxWindow = 8 (larger windows can result in much longer running time)
 	public static Segmentation autoBVE(Corpus c) {
-		int maxWindow = 9;
+		int maxWindow = 8; // save some time
 		return autoBVE(c, maxWindow);
 	}
 	
@@ -51,32 +82,25 @@ public class AutoEngine {
 		
 		// Local max on
 		for (int window = minWindow; window <= maxWindow; window++) {
-//			System.out.println("WINDOW " + window);
-			Segmentation temp = engine.voteBVEMDL(window, true, false);
-			segmentations.add(temp);
-			if (temp.descriptionLength < minDL) {
-				minDL = temp.descriptionLength;
-				bestSegmentation = temp;
-			}
+			segmentations.addAll(engine.voteBVEMDL(window, true, false));
 		}
 		
 		// Local max off
 		for (int window = minWindow; window <= maxWindow; window++) {
-//			System.out.println("WINDOW " + window);
-			Segmentation temp = engine.voteBVEMDL(window, false, false);
-			segmentations.add(temp);
-			if (temp.descriptionLength < minDL) {
-				minDL = temp.descriptionLength;
-				bestSegmentation = temp;
-			}
+			segmentations.addAll(engine.voteBVEMDL(window, false, false));
 		}
+		
+		// TODO: The above code can be made more efficient, or at least parallelized
 		
 		for (Segmentation s : segmentations) {
 			EvaluationResults results = Evaluator.evaluate(s, c);
 			scores.add(results.boundaryF1());
+			
+			if (s.descriptionLength < minDL) {
+				minDL = s.descriptionLength;
+				bestSegmentation = s;
+			}
 		}
-		
-//		System.out.println(scores);
 		
 		double maxBF = Stats.max(scores);
 		double minBF = Stats.min(scores);

@@ -3,7 +3,10 @@ package edu.arizona.ve.algorithm;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.Vector;
 
 import edu.arizona.ve.corpus.Corpus;
 import edu.arizona.ve.experts.BackwardEntropyExpert;
@@ -16,6 +19,8 @@ import edu.arizona.ve.experts.MorphemeExpert;
 import edu.arizona.ve.experts.PhonemeToMorphemeExpert;
 import edu.arizona.ve.experts.SurprisalExpert;
 import edu.arizona.ve.trie.Trie;
+import edu.arizona.ve.util.NF;
+import edu.arizona.ve.util.Stats;
 
 /**
  * @author Daniel Hewlett
@@ -145,7 +150,7 @@ public class VotingExperts {
 		for (int i = 0; i < length; i++) {
 			result += _corpus.get(i);
 			if (i < _vote.length) {
-				if (_vote[i] >= threshold) { 
+				if (_vote[i] > threshold) { 
 					result += "|";	
 				}
 			}
@@ -167,9 +172,39 @@ public class VotingExperts {
 			}
 		}
 		
-		if (segment.size() > 0) { segments.add(segment); }
+		if (segment.size() > 0) {
+			segments.add(segment); 
+		}
 		
 		return segments;
+	}
+	
+	public Set<List<String>> getLexicon() {
+		Set<List<String>> segments = new HashSet<List<String>>();
+		List<String> segment = new ArrayList<String>();
+		for (int i = 0; i < _corpus.size(); i++) {
+			if (i < _cutPoints.size() && _cutPoints.get(i)) {
+				segment.add(_corpus.get(i));
+				segments.add(segment);
+				segment = new ArrayList<String>();
+			} else {
+				segment.add(_corpus.get(i));
+			}
+		}
+		
+		if (segment.size() > 0) {
+			segments.add(segment); 
+		}
+		
+		return segments;
+	}
+	
+	public Set<String> getAlphabet() {
+		HashSet<String> letters = new HashSet<String>();
+		for (String s : _corpus) {
+			letters.add(s);
+		}
+		return letters;
 	}
 	
 	public void setThreshold(int threshold) {
@@ -178,8 +213,18 @@ public class VotingExperts {
 	
 	// MDL
 	public double computeDescriptionLength(Trie trie) {
-		int alphabetSize = trie.children.size(); 
-		double b = Math.log(alphabetSize) / Math.log(2); // number of bits needed to encode one character
+		Set<String> alphabet = getAlphabet();
+//		System.out.println("ALPHABET SIZE: " + alphabetSize);
+		
+		Vector<Double> charFreq = new Vector<Double>();
+		for (String s : alphabet) {
+			List<String> list = new Vector<String>();
+			list.add(s);
+			double freq = trie.getFreq(list);
+			charFreq.add(freq);
+		}
+		
+		double b = Stats.entropy(charFreq); // b is the entropy of the character distribution
 		
 		int totalWords = 0;
 		HashMap<List<String>,Integer> lexicon = new HashMap<List<String>,Integer>();
@@ -191,6 +236,8 @@ public class VotingExperts {
 			else { lexicon.put(seg, 1);	}
 		}
 		
+		assert (totalWords == segments.size());
+		
 		// Here's the cost of the lexicon
 		double lexiconCost = 0;
 		for (List<String> word : lexicon.keySet()) {
@@ -200,12 +247,13 @@ public class VotingExperts {
 		// Now the corpus encoding cost
 		double corpusCost = 0;
 		for (List<String> word : lexicon.keySet()) {
-			corpusCost += lexicon.get(word) * ((Math.log(lexicon.get(word) / Math.log(2)) -
-										       (Math.log(totalWords) / Math.log(2)))); 
+			corpusCost += lexicon.get(word) * (Stats.log(lexicon.get(word)) - (Stats.log(totalWords) ));
 		}
 		corpusCost = -corpusCost;
 		
-//		System.out.println("LEX: " + lexiconCost + " CORP: " + corpusCost);
+		System.out.println(	"LEX: " + NF.format(lexiconCost) + 
+							" CORP: " + NF.format(corpusCost) + 
+							" DL: " + NF.format(lexiconCost + corpusCost));
 		
 		// The total information cost is simply lexiconCost + corpusCost
 		return lexiconCost + corpusCost;
