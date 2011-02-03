@@ -238,10 +238,33 @@ public class VotingExperts {
 		
 		assert (totalWords == segments.size());
 		
-		// Here's the cost of the lexicon
-		double lexiconCost = 0;
+		// Here's the Argamon cost of the lexicon
+//		double lexiconCost = 0;
+//		for (List<String> word : lexicon.keySet()) {
+//			lexiconCost += b * word.size();
+//		}
+		
+		// Here's the Zhikov cost of the lexicon
+		HashMap<String, Integer> letterCounts = new HashMap<String, Integer>();
+//		HashMap<String, Double> letterProbs = new HashMap<String, Double>();
+		int total = 0;
 		for (List<String> word : lexicon.keySet()) {
-			lexiconCost += b * word.size();
+			total += word.size();
+			for (String letter : word) {
+				if (letterCounts.containsKey(letter)) {
+					letterCounts.put(letter, letterCounts.get(letter) + 1);
+				} else {
+					letterCounts.put(letter, 1);
+				}
+			}
+		}
+		double totalDouble = (double) total;
+		double lexiconCost = 0.0;
+		for (String letter : letterCounts.keySet()) {
+			double letterCount = (double) letterCounts.get(letter);
+			double letterProb = letterCount / totalDouble;
+			
+			lexiconCost -= letterCount * Stats.log(letterProb);
 		}
 		
 		// Now the corpus encoding cost
@@ -251,12 +274,19 @@ public class VotingExperts {
 		}
 		corpusCost = -corpusCost;
 		
+		double totalCost = lexiconCost + corpusCost; 
+//		// Parameters...
+		totalCost += ((lexicon.size() - 1.0) / 2.0) * Stats.log(segments.size());
+
+		// This term is just a constant for any given corpus, so is not really needed
+//		totalCost += ((letterCounts.size() - 1.0) / 2.0) * Stats.log(_corpus.size());
+		
 		System.out.println(	"LEX: " + NF.format(lexiconCost) + 
-							" CORP: " + NF.format(corpusCost) + 
-							" DL: " + NF.format(lexiconCost + corpusCost));
+				" CORP: " + NF.format(corpusCost) + 
+				" DL: " + NF.format(totalCost));
 		
 		// The total information cost is simply lexiconCost + corpusCost
-		return lexiconCost + corpusCost;
+		return totalCost;
 	}
 	
 	// Convenience Functions (Factory)
