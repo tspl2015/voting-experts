@@ -281,9 +281,9 @@ public class VotingExperts {
 		// This term is just a constant for any given corpus, so is not really needed
 //		totalCost += ((letterCounts.size() - 1.0) / 2.0) * Stats.log(_corpus.size());
 		
-		System.out.println(	"LEX: " + NF.format(lexiconCost) + 
-				" CORP: " + NF.format(corpusCost) + 
-				" DL: " + NF.format(totalCost));
+//		System.out.println(	"LEX: " + NF.format(lexiconCost) + 
+//				" CORP: " + NF.format(corpusCost) + 
+//				" DL: " + NF.format(totalCost));
 		
 		// The total information cost is simply lexiconCost + corpusCost
 		return totalCost;
