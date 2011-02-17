@@ -21,6 +21,33 @@ public class CorpusWriter {
 		writeCorpus(fileName, corpus, s.cutPoints);
 	}
 	
+	public static void writeForHVE(String fileName, Corpus corpus) {
+		boolean[] cuts = corpus.getCutPoints();
+		
+		try {
+			PrintStream out = new PrintStream("output/" + fileName);
+			
+			int numLetters = corpus.getCleanChars().size();
+			int numCutPoints = corpus.getCutPoints().length;
+			
+			for (int i = 0; i < numLetters; i++) {
+				out.print(corpus.getCleanChars().get(i));
+
+				if (i < numCutPoints) {
+					if (cuts[i]) {
+						out.print(" |");
+					} 
+				}
+			
+				out.print(" ");
+			}
+			
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	// THIS VERSION IS MODIFIED FOR LATIN TESTING DO NOT USE!
 	public static void writeCorpus(String fileName, Corpus corpus, boolean[] cuts, boolean spaces) {
 		if (cuts.length != corpus.getCleanChars().size() - 1) {
