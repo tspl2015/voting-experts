@@ -8,6 +8,7 @@ import java.util.Vector;
 
 import edu.arizona.ve.corpus.Corpus;
 import edu.arizona.ve.trie.Trie;
+import edu.arizona.ve.util.Utils;
 
 /**
 *
@@ -39,7 +40,7 @@ public class IncrementalVE {
 		ve.runAlgorithm(true);
 		
 		String segmented = new String();
-		for (List<String> seg : ve.getSegments()) {
+		for (List<String> seg : cl.getSegments(Utils.makeArray(ve.getCutPoints()))) {
 			for (String c : seg) { segmented += c; }
 			segmented += " ";
 		}
