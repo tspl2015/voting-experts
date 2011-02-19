@@ -526,6 +526,26 @@ public class Corpus {
 		return segs;
 	}
 
+	public List<List<String>> getSegments(boolean[] cutPoints) {
+		List<List<String>> segments = new ArrayList<List<String>>();
+		List<String> segment = new ArrayList<String>();
+		for (int i = 0; i < cleanChars.size(); i++) {
+			if (i < cutPoints.length && cutPoints[i]) {
+				segment.add(cleanChars.get(i));
+				segments.add(segment);
+				segment = new ArrayList<String>();
+			} else {
+				segment.add(cleanChars.get(i));
+			}
+		}
+		
+		if (segment.size() > 0) {
+			segments.add(segment); 
+		}
+		
+		return segments;
+	}
+	
 	public Corpus getReverseCorpus() {
 		Corpus rev = new Corpus();
 		

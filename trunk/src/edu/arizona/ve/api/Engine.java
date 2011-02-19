@@ -1,6 +1,5 @@
 package edu.arizona.ve.api;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -11,6 +10,7 @@ import edu.arizona.ve.corpus.Corpus.CorpusType;
 import edu.arizona.ve.corpus.CorpusWriter;
 import edu.arizona.ve.evaluation.EvaluationResults;
 import edu.arizona.ve.evaluation.Evaluator;
+import edu.arizona.ve.mdl.MDL;
 import edu.arizona.ve.trie.Trie;
 import edu.arizona.ve.util.Utils;
 
@@ -195,6 +195,7 @@ public class Engine {
 //		return bestSegmentation;
 	}
 	
+	// TODO: What is the difference between this and voteKnowledgeTransfer
 	public Segmentation voteTransfer(Corpus newCorpus, int window, int threshold, boolean useLocalMax) {
 		setCorpus(newCorpus);
 		return votePartial(window, threshold, useLocalMax, false);
@@ -207,9 +208,9 @@ public class Engine {
 	    Segmentation s = new Segmentation(windowSize, threshold);
 	    s.cutPoints = Utils.makeArray(ve.getCutPoints());
 	    s.localMax = useLocalMax;
-	    s.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+	    s.descriptionLength = MDL.computeDescriptionLength(corpus, s.cutPoints, forwardTrie);
 
-	    forwardSegmentation = s;boolean[] lastSegmentation = partialSegmentation.cutPoints;
+	    forwardSegmentation = s;
 	    
 	    return s;
 	}
@@ -221,7 +222,7 @@ public class Engine {
 	    Segmentation s = new Segmentation(windowSize, threshold);
 	    s.cutPoints = Utils.makeArray(ve.getCutPoints());
 	    s.localMax = useLocalMax;
-	    s.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+	    s.descriptionLength = MDL.computeDescriptionLength(corpus, s.cutPoints, forwardTrie);
 
 	    backwardSegmentation = s;
 	    
@@ -244,7 +245,7 @@ public class Engine {
 			maxOff.threshold = t;
 			maxOff.localMax = false;
 			maxOff.cutPoints = Utils.makeArray(ve.getCutPoints());
-			maxOff.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+			maxOff.descriptionLength = MDL.computeDescriptionLength(corpus, maxOff.cutPoints, forwardTrie);
 			segmentations.add(maxOff);
 			
 			ve.makeCutPoints(ve.getCutPoints().size(), true);
@@ -254,7 +255,7 @@ public class Engine {
 			maxOn.threshold = t;
 			maxOn.localMax = true;
 			maxOn.cutPoints = Utils.makeArray(ve.getCutPoints());
-			maxOn.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+			maxOn.descriptionLength = MDL.computeDescriptionLength(corpus, maxOn.cutPoints, forwardTrie);
 			
 			segmentations.add(maxOn);
 		}
@@ -276,7 +277,7 @@ public class Engine {
 			maxOff.threshold = t;
 			maxOff.localMax = false;
 			maxOff.cutPoints = Utils.makeArray(ve.getCutPoints());
-			maxOff.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+			maxOff.descriptionLength = MDL.computeDescriptionLength(corpus, maxOff.cutPoints, forwardTrie);
 			segmentations.add(maxOff);
 			
 			// Local Max ON
@@ -287,7 +288,7 @@ public class Engine {
 			maxOn.threshold = t;
 			maxOn.localMax = true;
 			maxOn.cutPoints = Utils.makeArray(ve.getCutPoints());
-			maxOn.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+			maxOn.descriptionLength = MDL.computeDescriptionLength(corpus, maxOn.cutPoints, forwardTrie);
 			
 			segmentations.add(maxOn);
 		}
@@ -306,14 +307,14 @@ public class Engine {
 	    Segmentation s = new Segmentation(windowSize, threshold);
 	    s.cutPoints = Utils.makeArray(pve.getCutPoints());
 	    s.localMax = useLocalMax;
-	    s.descriptionLength = pve.computeDescriptionLength(forwardTrie);
+	    s.descriptionLength = MDL.computeDescriptionLength(corpus, s.cutPoints, forwardTrie);
 	    
 	    partialSegmentation = s;
 	    
 	    if (DEBUG) {
 //	    	System.out.println();
-//		    System.out.println(pve.getVoteString(100));
-//		    System.out.println(pve.getSegmentedString(100, threshold));
+		    System.out.println(pve.getVoteString(100));
+		    System.out.println(pve.getSegmentedString(100, threshold));
 //		    System.out.println(s.descriptionLength);
 	    }
 	    
@@ -327,7 +328,7 @@ public class Engine {
 		Segmentation s = new Segmentation(windowSize, threshold);
 	    s.cutPoints = Utils.makeArray(pve.getCutPoints());
 	    s.localMax = useLocalMax;
-	    s.descriptionLength = pve.computeDescriptionLength(forwardTrie);
+	    s.descriptionLength = MDL.computeDescriptionLength(corpus, s.cutPoints, forwardTrie);
 	    
 	    return s;
 	}	    
@@ -343,7 +344,7 @@ public class Engine {
 	    bidiSegmentation.direction = Direction.BiDirectional;
 	    bidiSegmentation.cutPoints = Utils.makeArray(ve.getCutPoints());
 	    bidiSegmentation.localMax = useLocalMax;
-	    bidiSegmentation.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+	    bidiSegmentation.descriptionLength = MDL.computeDescriptionLength(corpus, bidiSegmentation.cutPoints, forwardTrie);
 
 	    return bidiSegmentation;
 	}
@@ -358,7 +359,7 @@ public class Engine {
 	    bidiSegmentation.direction = Direction.BiDirectional;
 	    bidiSegmentation.cutPoints = Utils.makeArray(ve.getCutPoints());
 	    bidiSegmentation.localMax = useLocalMax;
-	    bidiSegmentation.descriptionLength = ve.computeDescriptionLength(forwardTrie);
+	    bidiSegmentation.descriptionLength = MDL.computeDescriptionLength(corpus, bidiSegmentation.cutPoints, forwardTrie);
 
 	    return bidiSegmentation;
 	}
